@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import Database from "better-sqlite3";
 import ExcelJS from "exceljs";
@@ -13,10 +13,26 @@ const NICE_VERSION = "NCL(13-2026)";
 function sha256(path) {
     return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
+function resolveSourcePath(sourceRoot, ...segments) {
+    let current = sourceRoot;
+    for (const segment of segments) {
+        const direct = join(current, segment);
+        if (existsSync(direct)) {
+            current = direct;
+            continue;
+        }
+        const target = segment.normalize("NFC");
+        const match = readdirSync(current).find((entry) => entry.normalize("NFC") === target);
+        if (!match)
+            throw new Error(`Source file not found: ${join(current, segment)}`);
+        current = join(current, match);
+    }
+    return current;
+}
 function sourceInfo(name, sourceRoot, path, rows, warnings, metadata) {
     return {
         name,
-        path: relative(sourceRoot, path),
+        path: relative(sourceRoot, path).normalize("NFC"),
         source_date: SOURCE_DATE,
         ingested_at: new Date().toISOString(),
         sha256: sha256(path),
@@ -220,7 +236,7 @@ function createSchema(db) {
   `);
 }
 function ingestWdl(db, sourceRoot) {
-    const path = join(sourceRoot, "Classification Nice", "wdl_toutes_classes_FR.csv");
+    const path = resolveSourcePath(sourceRoot, "Classification Nice", "wdl_toutes_classes_FR.csv");
     const warnings = [];
     const rows = parseCsv(path);
     const expected = ["classe", "admissible", "terme", "commentaire", "source", "privilegie", "page", "ligne_page"];
@@ -261,7 +277,7 @@ function ingestWdl(db, sourceRoot) {
     return sourceInfo("WDL IPI", sourceRoot, path, inserted, warnings);
 }
 async function ingestNice(db, sourceRoot) {
-    const path = join(sourceRoot, "Classification Nice", "Intitulés généraux.docx");
+    const path = resolveSourcePath(sourceRoot, "Classification Nice", "Intitulés généraux.docx");
     const warnings = [];
     const raw = (await mammoth.extractRawText({ path })).value;
     const lines = raw.split(/\r?\n/).map((line) => collapseWhitespace(line)).filter(Boolean);
@@ -349,7 +365,7 @@ function worksheetRows(workbook, sheetName) {
     return rows;
 }
 async function ingestSwissreg(db, sourceRoot) {
-    const path = join(sourceRoot, "Exemples marques", "swissreg_mandataires_produits_services_PARTIEL_2026-05-05.xlsx");
+    const path = resolveSourcePath(sourceRoot, "Exemples marques", "swissreg_mandataires_produits_services_PARTIEL_2026-05-05.xlsx");
     const warnings = [];
     const workbook = await loadWorkbook(path);
     const rows = worksheetRows(workbook, "Produits-services");
@@ -397,7 +413,7 @@ async function ingestSwissreg(db, sourceRoot) {
     return sourceInfo("Swissreg Produits-services", sourceRoot, path, inserted, warnings);
 }
 async function ingestClassExamples(db, sourceRoot) {
-    const path = join(sourceRoot, "Exemples marques", "Liste classes.xlsx");
+    const path = resolveSourcePath(sourceRoot, "Exemples marques", "Liste classes.xlsx");
     const warnings = [];
     const workbook = await loadWorkbook(path);
     const insert = db.prepare(`
@@ -430,7 +446,7 @@ async function ingestClassExamples(db, sourceRoot) {
     return sourceInfo("Class examples", sourceRoot, path, count, warnings);
 }
 async function ingestTaf(db, sourceRoot) {
-    const path = join(sourceRoot, "Jurisprudence TAF", "report_2026-05-05.pdf");
+    const path = resolveSourcePath(sourceRoot, "Jurisprudence TAF", "report_2026-05-05.pdf");
     const warnings = [];
     const parser = new PDFParse({ data: readFileSync(path) });
     const info = await parser.getInfo();
