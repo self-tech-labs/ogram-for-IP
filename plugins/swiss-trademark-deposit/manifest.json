@@ -1,0 +1,91 @@
+{
+  "name": "swiss-trademark-deposit",
+  "version": "0.1.0",
+  "display_name": "Swiss Trademark Deposit",
+  "description": "Offline-first assistant for preparing Swiss trademark filing work before the IPI using local Nice, WDL, Swissreg, and TAF corpora.",
+  "primary_runtime": "codex-plugin",
+  "compatibility": {
+    "codex": {
+      "manifest": ".codex-plugin/plugin.json",
+      "marketplace_entry": ".agents/plugins/marketplace.json",
+      "status": "supported"
+    },
+    "claude": {
+      "manifest": ".claude-plugin/plugin.json",
+      "mcp_config": ".mcp.json",
+      "status": "compatible with local MCP/plugin environments that support plugin-root variables"
+    }
+  },
+  "components": {
+    "skills": [
+      "skills/swiss-trademark-deposit/SKILL.md"
+    ],
+    "commands": [
+      "commands/depot-marque.md",
+      "commands/analyse-signe.md",
+      "commands/rediger-libelles.md",
+      "commands/recherche-anteriorite.md"
+    ],
+    "mcp_servers": {
+      "nice-headings": {
+        "tools": [
+          "get_nice_heading",
+          "list_nice_headings",
+          "filing_intake_check",
+          "filing_requirements_snapshot",
+          "corpus_stats"
+        ]
+      },
+      "wdl": {
+        "tools": [
+          "search_wdl",
+          "get_wdl_terms_by_class",
+          "validate_term",
+          "corpus_stats"
+        ]
+      },
+      "swissreg-corpus": {
+        "tools": [
+          "search_swissreg_terms",
+          "get_class_combinations",
+          "get_sector_benchmark",
+          "list_mandataires",
+          "swissreg_mark_detail",
+          "clearance_search_plan",
+          "corpus_stats"
+        ]
+      },
+      "taf-decisions": {
+        "tools": [
+          "sign_risk_screen",
+          "search_taf_decisions",
+          "get_taf_decision",
+          "find_similar_signs",
+          "corpus_stats"
+        ]
+      }
+    }
+  },
+  "runtime": {
+    "node": ">=22",
+    "database": "servers/swiss-trademark-mcp/data/trademark.sqlite",
+    "startup_wrapper": "scripts/run-mcp-server.mjs",
+    "first_run_behavior": "Installs production MCP runtime dependencies with npm ci --omit=dev if node_modules is absent."
+  },
+  "data_coverage": {
+    "source_date": "2026-05-05",
+    "official_sources_checked_at": "2026-05-16",
+    "nice_headings": 45,
+    "wdl_terms": 41539,
+    "swissreg_goods_services": 75155,
+    "swissreg_marks": 25823,
+    "taf_entries": 549
+  },
+  "known_limits": [
+    "The Swissreg corpus is a professional example corpus, not a complete live anteriority search.",
+    "Mandataire groups are metadata only; goods/services rows cannot be filtered by mandataire in v0.1.0.",
+    "TAF similar-sign matching is local lexical and structural scoring, not embeddings.",
+    "EUIPO TMclass and TMview APIs are not integrated in v0.1.0.",
+    "Stored IPI fees and filing requirements must be verified at filing time."
+  ]
+}

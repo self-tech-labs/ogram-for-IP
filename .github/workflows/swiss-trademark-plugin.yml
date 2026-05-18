@@ -1,0 +1,28 @@
+name: Swiss Trademark Plugin
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp/package-lock.json
+      - run: npm ci
+      - run: npm run ingest
+      - run: npm run build
+      - run: npm test
+      - run: npm run smoke
+      - run: npm run plugin:smoke
+      - run: node ../../scripts/package-plugin.mjs --skip-checks

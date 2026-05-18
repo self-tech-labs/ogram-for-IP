@@ -1,0 +1,4 @@
+*.docx binary
+*.xlsx binary
+*.pdf binary
+*.sqlite binary

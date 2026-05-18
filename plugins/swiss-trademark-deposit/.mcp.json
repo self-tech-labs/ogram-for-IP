@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "nice-headings": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "nice-headings"
+      ],
+      "env": {
+        "SWISS_TRADEMARK_DB": "${CLAUDE_PLUGIN_ROOT}/servers/swiss-trademark-mcp/data/trademark.sqlite"
+      }
+    },
+    "wdl": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "wdl"
+      ],
+      "env": {
+        "SWISS_TRADEMARK_DB": "${CLAUDE_PLUGIN_ROOT}/servers/swiss-trademark-mcp/data/trademark.sqlite"
+      }
+    },
+    "swissreg-corpus": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "swissreg-corpus"
+      ],
+      "env": {
+        "SWISS_TRADEMARK_DB": "${CLAUDE_PLUGIN_ROOT}/servers/swiss-trademark-mcp/data/trademark.sqlite"
+      }
+    },
+    "taf-decisions": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "taf-decisions"
+      ],
+      "env": {
+        "SWISS_TRADEMARK_DB": "${CLAUDE_PLUGIN_ROOT}/servers/swiss-trademark-mcp/data/trademark.sqlite"
+      }
+    }
+  }
+}

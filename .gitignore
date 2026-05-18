@@ -1,0 +1,23 @@
+.DS_Store
+Thumbs.db
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Node dependencies and transient output
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+.cache/
+.turbo/
+releases/
+*.plugin
+
+# Local editor state
+.idea/
+.vscode/
