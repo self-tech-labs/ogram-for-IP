@@ -1,6 +1,8 @@
 # Swiss Trademark Deposit
 
-Swiss Trademark Deposit is a private Codex/Claude-compatible plugin for lawyers and trademark practitioners preparing Swiss trademark filings before the IPI.
+Swiss Trademark Deposit is a Codex/Claude-compatible plugin for lawyers and trademark practitioners preparing Swiss trademark filings before the IPI.
+
+It is part of the ogram for IP marketplace, co-authored by [ogram.ch](https://ogram.ch) and [enodo.ch](https://enodo.ch). Ogram contributed the legaltech AI technical side, and enodo contributed the law-firm expertise. Both contributed to creating and open-sourcing this set of skills for professionals in IP.
 
 It is packaged as an offline-first local plugin: the skill, commands, four MCP servers, built JavaScript, and generated SQLite corpus live inside this folder. The normal package is portable and installs MCP runtime dependencies on first use; a larger platform-specific standalone package can include production `node_modules`.
 

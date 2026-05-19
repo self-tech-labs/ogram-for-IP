@@ -1,14 +1,26 @@
 {
   "name": "swiss-trademark-deposit",
-  "description": "Assistance au depot de marques suisses aupres de l'IPI, avec NCL(13-2026), WDL, corpus Swissreg, controles de depot et jurisprudence TAF.",
+  "description": "Assistant open-source de depot de marques suisses aupres de l'IPI, avec NCL(13-2026), WDL, corpus Swissreg, controles de depot et jurisprudence TAF.",
   "version": "0.1.0",
   "author": {
-    "name": "self.tech labs / ogram",
-    "url": "https://github.com/self-tech-labs"
+    "name": "ogram.ch and enodo.ch",
+    "url": "https://ogram.ch"
   },
+  "contributors": [
+    {
+      "name": "ogram.ch",
+      "url": "https://ogram.ch",
+      "role": "Legaltech AI technical side"
+    },
+    {
+      "name": "enodo.ch",
+      "url": "https://enodo.ch",
+      "role": "Law firm"
+    }
+  ],
   "homepage": "https://github.com/self-tech-labs/ogram-for-IP",
   "repository": "https://github.com/self-tech-labs/ogram-for-IP.git",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "keywords": ["swiss", "trademark", "intellectual-property", "lawyers", "switzerland", "marques", "IPI", "Nice", "WDL", "Swissreg", "TAF", "MCP"],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",

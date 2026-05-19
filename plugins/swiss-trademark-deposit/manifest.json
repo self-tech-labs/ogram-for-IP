@@ -3,6 +3,19 @@
   "version": "0.1.0",
   "display_name": "Swiss Trademark Deposit",
   "description": "Offline-first assistant for preparing Swiss trademark filing work before the IPI using local Nice, WDL, Swissreg, and TAF corpora.",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "ogram.ch",
+      "url": "https://ogram.ch",
+      "role": "Legaltech AI technical side"
+    },
+    {
+      "name": "enodo.ch",
+      "url": "https://enodo.ch",
+      "role": "Law firm"
+    }
+  ],
   "primary_runtime": "codex-plugin",
   "compatibility": {
     "codex": {

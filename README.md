@@ -1,10 +1,16 @@
 # ogram for IP
 
-A private plugin marketplace for Swiss intellectual property work.
+Open-source AI skills and local MCP tools for Swiss intellectual property professionals.
 
 This repository packages AI assistance for lawyers and trademark practitioners working with Swiss filings, especially trademark deposits before the Swiss Federal Institute of Intellectual Property (IPI). It includes a plug-and-play local plugin for Codex, with Claude-compatible MCP metadata for local plugin environments.
 
+The ogram for IP marketplace is co-authored by [ogram.ch](https://ogram.ch) and [enodo.ch](https://enodo.ch). Ogram contributed the legaltech AI technical side, while enodo contributed the law-firm expertise. Together, they created and open-sourced this set of skills for professionals in intellectual property.
+
 Repository: [github.com/self-tech-labs/ogram-for-IP](https://github.com/self-tech-labs/ogram-for-IP)
+
+## License
+
+This repository is released under the MIT License. See [LICENSE](LICENSE).
 
 ## What Is Inside
 

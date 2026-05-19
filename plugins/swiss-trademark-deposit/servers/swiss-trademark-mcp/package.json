@@ -2,6 +2,7 @@
   "name": "swiss-trademark-mcp",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Read-only MCP server for Swiss trademark deposit corpora.",
   "bin": {

@@ -81,9 +81,9 @@ Exemple de base :
   "description": "Assistance au depot de marques suisses aupres de l'IPI, avec classification Nice, WDL, corpus Swissreg et jurisprudence TAF.",
   "version": "0.1.0",
   "author": {
-    "name": "Timothee Barghouth"
+    "name": "ogram.ch and enodo.ch"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "keywords": ["swiss", "trademark", "marques", "IPI", "Nice", "MCP"]
 }
 ```
@@ -92,8 +92,7 @@ Notes :
 
 - `name` devient le namespace du plugin ;
 - garder le nom exactement `swiss-trademark-deposit` ;
-- choisir une licence avant distribution externe ;
-- si le plugin reste prive, `UNLICENSED` est coherent.
+- la licence de distribution est MIT.
 
 ## Configuration `.mcp.json`
 

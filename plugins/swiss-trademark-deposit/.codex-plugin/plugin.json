@@ -1,14 +1,26 @@
 {
   "name": "swiss-trademark-deposit",
   "version": "0.1.0",
-  "description": "Offline assistant for preparing Swiss trademark deposits with NCL(13-2026), IPI WDL terms, Swissreg examples, filing checks, and TAF precedent search.",
+  "description": "Open-source offline assistant for preparing Swiss trademark deposits with NCL(13-2026), IPI WDL terms, Swissreg examples, filing checks, and TAF precedent search.",
   "author": {
-    "name": "self.tech labs / ogram",
-    "url": "https://github.com/self-tech-labs"
+    "name": "ogram.ch and enodo.ch",
+    "url": "https://ogram.ch"
   },
+  "contributors": [
+    {
+      "name": "ogram.ch",
+      "url": "https://ogram.ch",
+      "role": "Legaltech AI technical side"
+    },
+    {
+      "name": "enodo.ch",
+      "url": "https://enodo.ch",
+      "role": "Law firm"
+    }
+  ],
   "homepage": "https://github.com/self-tech-labs/ogram-for-IP",
   "repository": "https://github.com/self-tech-labs/ogram-for-IP.git",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "keywords": [
     "swiss",
     "trademark",
@@ -28,8 +40,8 @@
   "interface": {
     "displayName": "Swiss Trademark Deposit",
     "shortDescription": "Prepare Swiss trademark filings with local IPI, Nice, Swissreg, and TAF sources.",
-    "longDescription": "A private, offline-first assistant for Swiss intellectual property lawyers preparing trademark deposits before the IPI. It combines a structured practitioner workflow with four local MCP servers over NCL(13-2026) headings, WDL terms, Swissreg professional examples, TAF precedent extracts, filing-intake checks, sign-risk screening, and clearance planning.",
-    "developerName": "self.tech labs / ogram",
+    "longDescription": "An open-source, offline-first assistant for Swiss intellectual property lawyers preparing trademark deposits before the IPI. Co-authored by ogram.ch and enodo.ch, it combines a structured practitioner workflow with four local MCP servers over NCL(13-2026) headings, WDL terms, Swissreg professional examples, TAF precedent extracts, filing-intake checks, sign-risk screening, and clearance planning.",
+    "developerName": "ogram.ch and enodo.ch",
     "category": "Legal",
     "capabilities": [
       "Interactive",
