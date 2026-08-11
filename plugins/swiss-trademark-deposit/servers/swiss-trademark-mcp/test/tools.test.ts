@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { SwissTrademarkCorpus } from "../src/db.js";
@@ -272,8 +272,12 @@ describe("plugin MCP server layout", () => {
   it("exposes the four corpus-specific MCP servers in both host manifests", () => {
     for (const manifestPath of ["../../.claude-plugin/plugin.json", "../../.codex-plugin/plugin.json"]) {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      expect(Object.keys(manifest.mcpServers).sort()).toEqual(["nice-headings", "swissreg-corpus", "taf-decisions", "wdl"]);
-      for (const [serverName, serverConfig] of Object.entries<any>(manifest.mcpServers)) {
+      const mcpServers =
+        typeof manifest.mcpServers === "string"
+          ? JSON.parse(readFileSync(resolve(dirname(manifestPath), "..", manifest.mcpServers), "utf8")).mcpServers
+          : manifest.mcpServers;
+      expect(Object.keys(mcpServers).sort()).toEqual(["nice-headings", "swissreg-corpus", "taf-decisions", "wdl"]);
+      for (const [serverName, serverConfig] of Object.entries<any>(mcpServers)) {
         expect(serverConfig.command).toBe("node");
         expect(serverConfig.args[0]).toContain("scripts/run-mcp-server.mjs");
         expect(serverConfig.args[1]).toBe(serverName);
