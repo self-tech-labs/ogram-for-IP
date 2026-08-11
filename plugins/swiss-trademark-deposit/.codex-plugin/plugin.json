@@ -1,23 +1,11 @@
 {
   "name": "swiss-trademark-deposit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open-source offline assistant for preparing Swiss trademark deposits with NCL(13-2026), IPI WDL terms, Swissreg examples, filing checks, and TAF precedent search.",
   "author": {
     "name": "ogram.ch and enodo.ch",
     "url": "https://ogram.ch"
   },
-  "contributors": [
-    {
-      "name": "ogram.ch",
-      "url": "https://ogram.ch",
-      "role": "Legaltech AI technical side"
-    },
-    {
-      "name": "enodo.ch",
-      "url": "https://enodo.ch",
-      "role": "Law firm"
-    }
-  ],
   "homepage": "https://github.com/self-tech-labs/ogram-for-IP",
   "repository": "https://github.com/self-tech-labs/ogram-for-IP.git",
   "license": "MIT",
@@ -36,13 +24,46 @@
     "MCP"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": {
+    "nice-headings": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "nice-headings"
+      ]
+    },
+    "wdl": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "wdl"
+      ]
+    },
+    "swissreg-corpus": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "swissreg-corpus"
+      ]
+    },
+    "taf-decisions": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "taf-decisions"
+      ]
+    }
+  },
   "interface": {
     "displayName": "Swiss Trademark Deposit",
     "shortDescription": "Prepare Swiss trademark filings with local IPI, Nice, Swissreg, and TAF sources.",
     "longDescription": "An open-source, offline-first assistant for Swiss intellectual property lawyers preparing trademark deposits before the IPI. Co-authored by ogram.ch and enodo.ch, it combines a structured practitioner workflow with four local MCP servers over NCL(13-2026) headings, WDL terms, Swissreg professional examples, TAF precedent extracts, filing-intake checks, sign-risk screening, and clearance planning.",
     "developerName": "ogram.ch and enodo.ch",
-    "category": "Legal",
+    "category": "Business & Operations",
     "capabilities": [
       "Interactive",
       "MCP",
@@ -55,6 +76,7 @@
       "Draft Swiss Nice labels for these services.",
       "Analyze absolute grounds for this Swiss mark."
     ],
-    "brandColor": "#D52B1E"
+    "brandColor": "#D52B1E",
+    "logo": "./assets/ogram-logo.png"
   }
 }

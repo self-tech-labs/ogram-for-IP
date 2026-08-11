@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { z } from "zod";
-import { runCorpusServer, toolResult } from "./mcp-shared.js";
+import { identifierSchema, limit50Schema, limit500Schema, niceClassSchema, niceClassesSchema, offsetSchema, querySchema, termSchema } from "./mcp-schemas.js";
+import { READ_ONLY_TOOL_ANNOTATIONS, runCorpusServer, toolResult } from "./mcp-shared.js";
 
 await runCorpusServer("wdl", (server, corpus) => {
   server.registerTool(
@@ -8,11 +9,12 @@ await runCorpusServer("wdl", (server, corpus) => {
     {
       title: "Search WDL",
       description: "Search IPI WDL goods/services terms by text and optional Nice class.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        class_number: z.number().int().min(1).max(45).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        query: querySchema.optional(),
+        class_number: niceClassSchema.optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) =>
@@ -31,10 +33,11 @@ await runCorpusServer("wdl", (server, corpus) => {
     {
       title: "Get WDL terms by class",
       description: "Return WDL terms for one class. Results are paginated to keep MCP output bounded.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        class_number: z.number().int().min(1).max(45),
-        limit: z.number().int().min(1).max(500).optional(),
-        offset: z.number().int().min(0).optional(),
+        class_number: niceClassSchema,
+        limit: limit500Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.wdlTermsByClass(args)),
@@ -45,9 +48,10 @@ await runCorpusServer("wdl", (server, corpus) => {
     {
       title: "Validate WDL term",
       description: "Validate one proposed term against WDL for a Nice class.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        terme: z.string().min(1),
-        class_number: z.number().int().min(1).max(45),
+        terme: termSchema,
+        class_number: niceClassSchema,
         fuzzy: z.boolean().optional(),
       },
     },
@@ -66,12 +70,13 @@ await runCorpusServer("wdl", (server, corpus) => {
     {
       title: "Search WDL terms",
       description: "Compatibility alias for search_wdl with multi-class filtering.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        classes: z.array(z.number().int().min(1).max(45)).optional(),
-        source: z.string().nullable().optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        query: querySchema.optional(),
+        classes: niceClassesSchema.optional(),
+        source: identifierSchema.nullable().optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.wdlSearchTerms(args)),
@@ -82,13 +87,17 @@ await runCorpusServer("wdl", (server, corpus) => {
     {
       title: "Validate WDL terms",
       description: "Compatibility alias for validating multiple proposed terms.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        items: z.array(
-          z.object({
-            class_number: z.number().int().min(1).max(45),
-            term: z.string().min(1),
-          }),
-        ),
+        items: z
+          .array(
+            z.object({
+              class_number: niceClassSchema,
+              term: termSchema,
+            }),
+          )
+          .min(1)
+          .max(100),
         fuzzy: z.boolean().optional(),
       },
     },
@@ -100,6 +109,7 @@ await runCorpusServer("wdl", (server, corpus) => {
     {
       title: "Corpus stats",
       description: "Return local corpus counts, source dates, and ingestion warnings.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {},
     },
     async () => toolResult(corpus.corpusStats()),

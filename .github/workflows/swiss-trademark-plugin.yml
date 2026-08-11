@@ -1,4 +1,4 @@
-name: Swiss Trademark Plugin
+name: Validate Swiss Trademark Plugin
 
 on:
   pull_request:
@@ -6,23 +6,137 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: swiss-trademark-plugin-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    name: Node ${{ matrix.node }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: 22
+          - os: ubuntu-latest
+            node: 24
+          - os: ubuntu-latest
+            node: 25
+          - os: macos-latest
+            node: 22
+          - os: windows-latest
+            node: 22
     defaults:
       run:
         working-directory: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp/package-lock.json
+
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build from a clean dist directory
+        run: npm run build
+
+      - name: Type-check test sources
+        run: npm run typecheck:test
+
+      - name: Ensure compiled runtime is committed
+        run: git diff --exit-code -- dist
+
+      - name: Run unit and integration tests
+        run: npm test
+
+      - name: Run MCP smoke tests
+        run: npm run smoke
+
+      - name: Validate both plugin hosts and bundled data
+        run: npm run plugin:smoke
+
+      - name: Package and verify deterministic archive
+        run: node ../../scripts/package-plugin.mjs --skip-checks
+
+      - name: Save first package checksum
+        run: node -e "const fs=require('node:fs'),p=require('node:path');const release=p.resolve('../../../../releases');fs.copyFileSync(p.join(release,'swiss-trademark-deposit-0.2.0.plugin.sha256'),p.join(process.env.RUNNER_TEMP,'swiss-trademark-deposit.sha256'));"
+
+      - name: Repackage without changes
+        run: node ../../scripts/package-plugin.mjs --skip-checks
+
+      - name: Verify reproducible package checksum
+        run: node -e "const fs=require('node:fs'),p=require('node:path');const release=p.resolve('../../../../releases');const first=fs.readFileSync(p.join(process.env.RUNNER_TEMP,'swiss-trademark-deposit.sha256'),'utf8');const second=fs.readFileSync(p.join(release,'swiss-trademark-deposit-0.2.0.plugin.sha256'),'utf8');if(first!==second)throw new Error('Package is not reproducible');"
+
+      - name: Package and launch-check standalone runtime
+        if: matrix.node == 22
+        run: node ../../scripts/package-plugin.mjs --skip-checks --with-node-modules
+
+      - name: Upload verified plugin archive
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiss-trademark-deposit-0.2.0
+          path: |
+            releases/*.plugin
+            releases/*.plugin.sha256
+          if-no-files-found: error
+
+  audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp/package-lock.json
-      - run: npm ci
-      - run: npm run ingest
-      - run: npm run build
-      - run: npm test
-      - run: npm run smoke
-      - run: npm run plugin:smoke
-      - run: node ../../scripts/package-plugin.mjs --skip-checks
+
+      - name: Audit complete dependency tree
+        run: npm audit --audit-level=high
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  data-integrity:
+    name: Reproduce bundled database
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plugins/swiss-trademark-deposit/servers/swiss-trademark-mcp/package-lock.json
+
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Rebuild and compare bundled data
+        run: npm run ingest:check

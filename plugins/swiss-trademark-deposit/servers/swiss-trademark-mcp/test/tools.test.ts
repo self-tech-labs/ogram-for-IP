@@ -1,4 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { SwissTrademarkCorpus } from "../src/db.js";
 import { defaultDbPath, defaultManifestPath } from "../src/paths.js";
@@ -22,9 +25,12 @@ describe("ingested corpus", () => {
     expect(stats.counts.class_examples).toBe(1346);
     expect(stats.counts.taf_entries).toBe(549);
     expect(stats.nice_classification_version).toBe("NCL(13-2026)");
-    expect(stats.document_understanding.taf_extraction.parser).toBe("swiss-trademark-langextract");
-    expect(stats.document_understanding.taf_extraction.average_confidence).toBeGreaterThan(0.85);
-    expect(stats.document_understanding.taf_extraction.low_confidence_entries).toBe(0);
+    const tafExtraction = stats.document_understanding.taf_extraction;
+    expect(tafExtraction).not.toBeNull();
+    if (!tafExtraction) throw new Error("TAF extraction metadata is missing.");
+    expect(tafExtraction.parser).toBe("swiss-trademark-langextract");
+    expect(tafExtraction.average_confidence).toBeGreaterThan(0.85);
+    expect(tafExtraction.low_confidence_entries).toBe(0);
 
     const manifest = JSON.parse(readFileSync(defaultManifestPath(), "utf8"));
     expect(manifest.sources.find((source: any) => source.name === "WDL IPI").rows).toBe(41539);
@@ -33,6 +39,47 @@ describe("ingested corpus", () => {
     expect(tafSource.metadata.extraction.entries).toBe(549);
     for (const source of manifest.sources) {
       expect(source.path.startsWith("/")).toBe(false);
+    }
+  });
+
+  it("rejects malformed source manifests with a focused error", () => {
+    const directory = mkdtempSync(join(tmpdir(), "swiss-trademark-manifest-"));
+    const manifestPath = join(directory, "source-manifest.json");
+    writeFileSync(manifestPath, JSON.stringify({ generated_at: "today", sources: [{ name: "broken" }], warnings: [] }));
+    const c = new SwissTrademarkCorpus(defaultDbPath(), manifestPath);
+    try {
+      expect(() => c.manifest()).toThrow(/Invalid source manifest/);
+    } finally {
+      c.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a valid-looking manifest that is not bound to the database", () => {
+    const directory = mkdtempSync(join(tmpdir(), "swiss-trademark-manifest-binding-"));
+    const manifestPath = join(directory, "source-manifest.json");
+    const manifest = JSON.parse(readFileSync(defaultManifestPath(), "utf8"));
+    manifest.sources[0].sha256 = "b".repeat(64);
+    writeFileSync(manifestPath, JSON.stringify(manifest));
+    const c = new SwissTrademarkCorpus(defaultDbPath(), manifestPath);
+    try {
+      expect(() => c.manifest()).toThrow(/source-set digest/);
+    } finally {
+      c.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects incompatible database schemas before serving tools", () => {
+    const directory = mkdtempSync(join(tmpdir(), "swiss-trademark-db-"));
+    const dbPath = join(directory, "incompatible.sqlite");
+    const db = new Database(dbPath);
+    db.exec("CREATE TABLE unrelated (id INTEGER PRIMARY KEY)");
+    db.close();
+    try {
+      expect(() => new SwissTrademarkCorpus(dbPath)).toThrow(/Incompatible Swiss trademark database/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 });
@@ -70,6 +117,8 @@ describe("MCP tool contracts", () => {
     const c = corpus();
     const examples = c.swissregSearchExamples({ query: "Halbleiter", classes: [9], limit: 5 });
     expect(examples.results.length).toBeGreaterThan(0);
+    expect(examples.results[0].mark_id).toBe(String(examples.results[0].urn).split(":").at(-1));
+    expect(examples.results[0].goods_services_id).toBe(examples.results[0].legacy_mark_id);
     expect(examples.results[0].source_date).toBe("2026-05-05");
     expect(examples.corpus_notice).toMatch(/not a complete anteriority search/);
     expect(() =>
@@ -78,6 +127,7 @@ describe("MCP tool contracts", () => {
     expect(c.swissregMandataireMetadata({ mandataire_group: "Bugnion", limit: 2 }).results.length).toBeGreaterThan(0);
     expect(c.listSwissregMandataires().mandataires.map((row: any) => row.mandataire_group)).toContain("Bugnion");
     const mandataireSearch = c.searchSwissregTerms({ query: "Halbleiter", nice_class: 9, mandataire: "Bugnion", limit: 2 });
+    if (!("mandataire_filter_applied" in mandataireSearch)) throw new Error("Expected a mandataire-filter notice.");
     expect(mandataireSearch.mandataire_filter_applied).toBe(false);
     expect(mandataireSearch.mandataire_filter_notice).toMatch(/not filtered by mandataire/);
     expect(c.getSwissregSectorBenchmark({ nice_class: 9, limit: 5 }).mark_count).toBeGreaterThan(0);
@@ -87,6 +137,27 @@ describe("MCP tool contracts", () => {
     expect(combinations.combinations.length).toBeGreaterThan(0);
     expect(combinations.combinations[0].classes).toContain(9);
     expect(combinations.basis.mode).toMatch(/query_matched/);
+    c.close();
+  });
+
+  it("keeps Swissreg class-combination work bounded", () => {
+    const c = corpus();
+    const before = process.memoryUsage().heapUsed;
+    const started = performance.now();
+    const matches = c.getSwissregClassCombinations({ nice_classes: [9], limit: 20 });
+    const combinations = c.swissregClassCombinations({ classes_hint: [9], limit: 20 });
+    const elapsed = performance.now() - started;
+    const heapGrowth = process.memoryUsage().heapUsed - before;
+
+    expect(matches.matches).toHaveLength(20);
+    expect(matches.matches.every((mark) => mark.classes.includes(9))).toBe(true);
+    expect(combinations.combinations).toHaveLength(20);
+    expect(combinations.combinations.every((combination) => combination.classes.includes(9))).toBe(true);
+    // Keep a generous wall-clock ceiling for contended cross-platform CI. The
+    // heap budget is the stronger regression guard against the former full-table
+    // materialization, while this still catches pathological query plans.
+    expect(elapsed).toBeLessThan(5_000);
+    expect(heapGrowth).toBeLessThan(96 * 1024 * 1024);
     c.close();
   });
 
@@ -108,6 +179,9 @@ describe("MCP tool contracts", () => {
     expect(detail.entry.text).toContain("capsule");
     expect(detail.entry.extraction_quality?.parser).toBe("swiss-trademark-langextract");
     expect(c.tafGetDecision({ reference: "B-3601/2014" }).entry.text).toContain("capsule");
+    expect(c.tafGetDecision({ reference: " TAF B-3601/2014 " }).entry.text).toContain("capsule");
+    expect(() => c.tafGetDecision({ reference: "%" })).toThrow(/Invalid TAF reference/);
+    expect(() => c.tafGetDecision({ reference: "   " })).toThrow(/Invalid TAF reference/);
     const similarShape = c.findSimilarTafSigns({ sign: "capsule medicament", sign_type: "figurative", nice_classes: [5], limit: 3 });
     expect(similarShape.matching_method).toBe("local_structural_lexical_score");
     expect(similarShape.inferred_structural_tags).toContain("shape_3d");
@@ -117,6 +191,18 @@ describe("MCP tool contracts", () => {
     expect(similarWord.results[0].extracted_sign).toBe("APP STORE");
     expect(similarWord.results[0].score_components.sign_type_match).toBe(true);
     expect(() => c.tafGetEntry({ entry_id: "taf:missing" })).toThrow(/not found/);
+    c.close();
+  });
+
+  it("correlates TAF class and outcome filters on the same class row", () => {
+    const c = corpus();
+    const result = c.tafSearchPrecedents({
+      query: "VERY IMPORTANT PHARMACY",
+      classes: [5],
+      outcomes: ["ref"],
+      limit: 5,
+    });
+    expect(result.results.map((entry) => entry.entry_id)).not.toContain("taf:report_2026-05-05:0520");
     c.close();
   });
 
@@ -133,6 +219,7 @@ describe("MCP tool contracts", () => {
     const fees = c.filingRequirementsSnapshot({ classes_count: 4, electronic: true, expedited: true });
     expect(fees.filing_fee_estimate.estimated_total).toBe(850);
     expect(fees.nice_classification_version).toBe("NCL(13-2026)");
+    expect(fees.official_links.ipi_opposition).toContain("filing-an-opposition");
 
     const intake = c.filingIntakeCheck({
       applicant: { name: "Acme Inc.", domicile_country: "United States" },
@@ -144,6 +231,28 @@ describe("MCP tool contracts", () => {
     });
     expect(intake.warnings.join("\n")).toMatch(/English/);
     expect(intake.warnings.join("\n")).toMatch(/Swiss representative/);
+
+    const emptyTerms = c.filingIntakeCheck({
+      applicant: { name: "Acme Inc." },
+      sign: { text: "ACME", type: "word" },
+      goods_services: [{ class_number: 42, terms: [] }],
+      planned_use: "SaaS platform",
+      territories: ["CH"],
+      risk_tolerance: "medium",
+    });
+    expect(emptyTerms.ready_for_filing).toBe(false);
+    expect(emptyTerms.missing_required.join("\n")).toMatch(/non-empty goods\/services term/);
+
+    const unsupportedLanguage = c.filingIntakeCheck({
+      applicant: { name: "Acme Inc." },
+      sign: { text: "ACME", type: "word" },
+      goods_services: [{ class_number: 42, terms: ["consulting services"], language: "xx" }],
+      planned_use: "SaaS platform",
+      territories: ["CH"],
+      risk_tolerance: "medium",
+    });
+    expect(unsupportedLanguage.ready_for_filing).toBe(false);
+    expect(unsupportedLanguage.warnings.join("\n")).toMatch(/unsupported language code/);
 
     const risk = c.signRiskScreen({
       sign: "SWISS AI",
@@ -160,13 +269,15 @@ describe("MCP tool contracts", () => {
 });
 
 describe("plugin MCP server layout", () => {
-  it("exposes the four corpus-specific MCP servers from the developer documentation", () => {
-    const config = JSON.parse(readFileSync("../../.mcp.json", "utf8"));
-    expect(Object.keys(config.mcpServers).sort()).toEqual(["nice-headings", "swissreg-corpus", "taf-decisions", "wdl"]);
-    for (const [serverName, serverConfig] of Object.entries<any>(config.mcpServers)) {
-      expect(serverConfig.args[0]).toContain("scripts/run-mcp-server.mjs");
-      expect(serverConfig.args[1]).toBe(serverName);
-      expect(serverConfig.env.SWISS_TRADEMARK_DB).toContain("servers/swiss-trademark-mcp/data/trademark.sqlite");
+  it("exposes the four corpus-specific MCP servers in both host manifests", () => {
+    for (const manifestPath of ["../../.claude-plugin/plugin.json", "../../.codex-plugin/plugin.json"]) {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      expect(Object.keys(manifest.mcpServers).sort()).toEqual(["nice-headings", "swissreg-corpus", "taf-decisions", "wdl"]);
+      for (const [serverName, serverConfig] of Object.entries<any>(manifest.mcpServers)) {
+        expect(serverConfig.command).toBe("node");
+        expect(serverConfig.args[0]).toContain("scripts/run-mcp-server.mjs");
+        expect(serverConfig.args[1]).toBe(serverName);
+      }
     }
   });
 });

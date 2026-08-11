@@ -1,23 +1,8 @@
 {
   "name": "ogram-for-ip",
   "interface": {
-    "displayName": "ogram for IP",
-    "description": "Open-source AI skills and local MCP tools for Swiss IP professionals.",
-    "developerName": "ogram.ch and enodo.ch"
+    "displayName": "ogram for IP"
   },
-  "license": "MIT",
-  "coAuthors": [
-    {
-      "name": "ogram.ch",
-      "url": "https://ogram.ch",
-      "role": "Legaltech AI technical side"
-    },
-    {
-      "name": "enodo.ch",
-      "url": "https://enodo.ch",
-      "role": "Law firm"
-    }
-  ],
   "plugins": [
     {
       "name": "swiss-trademark-deposit",
@@ -29,7 +14,7 @@
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
       },
-      "category": "Legal"
+      "category": "Business & Operations"
     }
   ]
 }

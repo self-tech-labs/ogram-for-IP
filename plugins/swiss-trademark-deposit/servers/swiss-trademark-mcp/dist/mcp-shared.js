@@ -1,6 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { SwissTrademarkCorpus } from "./db.js";
+export const READ_ONLY_TOOL_ANNOTATIONS = {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+};
 export function toolResult(payload) {
     return {
         content: [
@@ -26,7 +32,7 @@ export async function runCorpusServer(name, register) {
     const corpus = new SwissTrademarkCorpus();
     const server = new McpServer({
         name,
-        version: "0.1.0",
+        version: "0.2.0",
     });
     register(server, corpus);
     process.on("SIGINT", () => {

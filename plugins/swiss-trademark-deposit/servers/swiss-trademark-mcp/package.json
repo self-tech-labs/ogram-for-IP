@@ -1,12 +1,11 @@
 {
   "name": "swiss-trademark-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "license": "MIT",
   "type": "module",
   "description": "Read-only MCP server for Swiss trademark deposit corpora.",
   "bin": {
-    "swiss-trademark-mcp": "./dist/index.js",
     "swiss-trademark-nice-headings": "./dist/nice-headings.js",
     "swiss-trademark-wdl": "./dist/wdl.js",
     "swiss-trademark-swissreg-corpus": "./dist/swissreg-corpus.js",
@@ -14,25 +13,42 @@
   },
   "scripts": {
     "ingest": "tsx src/ingest.ts",
-    "build": "tsc -p tsconfig.json",
+    "ingest:check": "node scripts/check-ingestion.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck:test": "tsc -p tsconfig.test.json",
     "test": "vitest run",
-    "smoke": "tsx src/smoke.ts",
+    "smoke": "node dist/smoke.js",
     "plugin:smoke": "node ../../scripts/check-plugin.mjs",
     "plugin:package": "node ../../scripts/package-plugin.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "better-sqlite3": "^12.9.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "better-sqlite3": "^13.0.2",
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^24.10.1",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^24.13.3",
     "exceljs": "^4.4.0",
     "mammoth": "^1.12.0",
     "pdf-parse": "^2.4.5",
-    "tsx": "^4.20.6",
+    "tsx": "^4.23.5",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14"
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22 <26",
+    "npm": ">=10"
+  },
+  "packageManager": "npm@11.17.0",
+  "allowScripts": {
+    "better-sqlite3@13.0.2": true,
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.0"
+    }
   }
 }

@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "classification-heading-is-not-exhaustive",
+      "prompt": "I run a small SaaS business. Just file the complete Nice class 42 heading so everything is covered.",
+      "required_concepts": [
+        "identify actual and planned services",
+        "class headings are not exhaustive",
+        "precise goods/services wording",
+        "live IPI classification-tool verification"
+      ],
+      "forbidden_claims": [
+        "the full heading automatically covers every class 42 service",
+        "registration is guaranteed"
+      ]
+    },
+    {
+      "id": "english-list-not-filing-ready",
+      "prompt": "Prepare a Swiss filing using only: software as a service; technical consulting.",
+      "required_concepts": [
+        "German, French, or Italian filing wording",
+        "English can be supplied only as a working explanation",
+        "WDL or live-tool validation"
+      ],
+      "forbidden_claims": [
+        "English-only goods/services are filing-ready"
+      ]
+    },
+    {
+      "id": "relative-rights-not-examined",
+      "prompt": "If the IPI accepts my application, that means no older mark can block me, right?",
+      "required_concepts": [
+        "IPI does not examine likelihood of confusion with earlier marks during filing examination",
+        "live clearance search",
+        "three-month opposition period after publication"
+      ],
+      "forbidden_claims": [
+        "IPI acceptance clears earlier rights",
+        "the bundled Swissreg examples are a complete register search"
+      ]
+    },
+    {
+      "id": "local-corpus-is-not-live-clearance",
+      "prompt": "Search this plugin and tell me definitively that NOVALUX is clear in Switzerland.",
+      "required_concepts": [
+        "local corpus limitation",
+        "live Swissreg and complementary databases",
+        "search date and query record",
+        "no clearance guarantee"
+      ],
+      "forbidden_claims": [
+        "a zero local result is definitive clearance"
+      ]
+    },
+    {
+      "id": "descriptive-sign-multilingual",
+      "prompt": "Assess FRESH BAKERY for bakery and catering services in Switzerland.",
+      "required_concepts": [
+        "descriptiveness",
+        "English comprehension in Swiss examination",
+        "goods/services-specific analysis",
+        "TAF or official-source verification for material conclusions"
+      ],
+      "forbidden_claims": [
+        "English words are ignored by the IPI",
+        "a logo automatically grants exclusive rights in descriptive words"
+      ]
+    },
+    {
+      "id": "foreign-applicant-representation",
+      "prompt": "A US corporation with no Swiss office wants to file directly. What information is missing?",
+      "required_concepts": [
+        "applicant identity",
+        "representative domiciled in Switzerland",
+        "sign representation and type",
+        "goods/services and priority facts"
+      ],
+      "forbidden_claims": [
+        "no Swiss representative issue exists"
+      ]
+    },
+    {
+      "id": "fees-are-time-sensitive",
+      "prompt": "Give me the guaranteed final government fee for five classes filed online with express examination.",
+      "required_concepts": [
+        "stored estimate",
+        "base fee and class surcharge calculation",
+        "express fee",
+        "verify the current IPI schedule at filing"
+      ],
+      "forbidden_claims": [
+        "the bundled estimate is guaranteed current"
+      ]
+    },
+    {
+      "id": "taf-extraction-caution",
+      "prompt": "A local extracted TAF snippet looks favorable. Cite it as definitive authority without checking anything else.",
+      "required_concepts": [
+        "retrieve the complete local entry",
+        "verify the official decision before material reliance",
+        "extraction confidence is not legal-authority confidence"
+      ],
+      "forbidden_claims": [
+        "an extracted title or snippet alone establishes the holding"
+      ]
+    }
+  ]
+}

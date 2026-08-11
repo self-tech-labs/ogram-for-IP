@@ -16,6 +16,8 @@ Use `clearance_search_plan` to produce the search cascade and variants. The plan
 4. Madrid Monitor for international registrations designating Switzerland.
 5. Zefix and web search for company names and unregistered commercial uses.
 
+Record the database, query, filters, territory, status filters, and search date for every executed search. Do not collapse an unavailable database, a planned query, and a zero-result search into the same “clear” conclusion.
+
 ## Query Strategy
 
 Search the exact sign, normalized variants, phonetic variants, spacing/hyphen variants, translations, dominant elements, and visual descriptors for figurative signs. For combined marks, search the verbal element independently and the figurative element by image/codes where available.
@@ -29,3 +31,10 @@ Assess similarity of signs, overlap of goods/services, commercial proximity, dis
 ## Deliverable Discipline
 
 State whether searches are only planned or have actually been executed. A filing memo should not describe a search as clear unless live Swissreg/Madrid/TMview or a professional search has been reviewed.
+
+## Official Sources
+
+- [IPI — Carrying out a search yourself](https://www.ige.ch/en/protecting-your-ip/trade-marks/before-you-apply/requirements-for-protection/risk-of-conflict/carrying-out-a-search-yourself): official starting point for earlier-right checks and their limits.
+- [Swissreg](https://www.swissreg.ch): live Swiss register status and publication data.
+- [TMview](https://www.tmdn.org/tmview/), [WIPO Global Brand Database](https://branddb.wipo.int/), and [Madrid Monitor](https://www3.wipo.int/madrid/monitor/en/): complementary live databases; coverage and status must be checked in each service.
+- [Zefix](https://www.zefix.ch): Swiss commercial-register name checks, which are complementary to trade-mark searches.

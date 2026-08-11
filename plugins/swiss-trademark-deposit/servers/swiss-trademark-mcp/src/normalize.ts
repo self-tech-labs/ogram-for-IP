@@ -37,10 +37,24 @@ export function truncate(value: unknown, max = 500): string {
 
 export function detectLanguageHint(value: string): "fr" | "de" | "it" | "en" | null {
   const text = ` ${normalizeText(value)} `;
-  const deHits = [" und ", " oder ", " fuer ", " fur ", " mit ", " waren ", " dienstleistungen ", " geraete "];
-  const frHits = [" et ", " ou ", " pour ", " avec ", " services ", " produits ", " conseils "];
-  const itHits = [" per ", " con ", " servizi ", " prodotti "];
-  const enHits = [" and ", " or ", " for ", " with ", " services ", " products "];
+  // Avoid cognates such as "services", which is identical in French and
+  // English. A false French classification could otherwise let an English-only
+  // filing list pass without the warning required by the IPI language rule.
+  const deHits = [
+    " und ", " oder ", " fuer ", " fur ", " mit ", " waren ", " dienstleistungen ", " geraete ",
+    " der ", " die ", " das ", " von ", " zur ", " zum ", " vermietung ", " beratung ", " entwicklung ",
+  ];
+  const frHits = [
+    " et ", " ou ", " pour ", " avec ", " produits ", " conseils ", " de ", " des ", " du ", " la ",
+    " le ", " les ", " location ", " formation ", " developpement ", " gestion ", " logiciel ", " logiciels ", " vente ",
+  ];
+  const itHits = [
+    " per ", " con ", " servizi ", " prodotti ", " di ", " del ", " della ", " degli ", " noleggio ", " consulenza ",
+  ];
+  const enHits = [
+    " and ", " or ", " for ", " with ", " products ", " of ", " the ", " software ", " consulting ",
+    " management ", " retail ", " training ", " rental ", " development ",
+  ];
   const score = (hits: string[]) => hits.reduce((total, hit) => total + (text.includes(hit) ? 1 : 0), 0);
   const scores = [
     ["de", score(deHits)] as const,

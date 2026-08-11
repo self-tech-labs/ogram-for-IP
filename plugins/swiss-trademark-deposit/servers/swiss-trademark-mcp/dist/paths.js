@@ -11,10 +11,13 @@ export function defaultManifestPath() {
     return resolve(packageRoot(), "data", "source-manifest.json");
 }
 export function defaultSourceRoot() {
-    return resolve(packageRoot(), "../../../..", "swiss-trademark-deposit-developer-package-2026-05-05");
+    return resolve(packageRoot(), "../../../..", "data-sources", "2026-05-05");
 }
 export function configuredDbPath() {
     return process.env.SWISS_TRADEMARK_DB || defaultDbPath();
+}
+export function configuredManifestPath() {
+    return process.env.SWISS_TRADEMARK_MANIFEST || defaultManifestPath();
 }
 export function configuredSourceRoot() {
     return process.env.SWISS_TRADEMARK_SOURCE_ROOT || defaultSourceRoot();

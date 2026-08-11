@@ -1,17 +1,21 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import Database from "better-sqlite3";
-import { defaultManifestPath, configuredDbPath } from "./paths.js";
+import { configuredDbPath, configuredManifestPath } from "./paths.js";
 import { detectLanguageHint, normalizeText, similarity, toFtsAnyQuery, toFtsQuery, truncate } from "./normalize.js";
 import { classifyRequestedSignType, extractTafSignCandidate, inferStructuralTags, scoreExtractedSign } from "./langextract.js";
+import { assertCompatibleDatabase } from "./schema.js";
+import { sourceManifestSchema, sourceSetDigest } from "./types.js";
 const CORPUS_DATE = "2026-05-05";
 const NICE_VERSION = "NCL(13-2026)";
-const OFFICIAL_SOURCE_CHECKED_AT = "2026-05-16";
+const OFFICIAL_SOURCE_CHECKED_AT = "2026-08-04";
+const MAX_SOURCE_MANIFEST_BYTES = 1024 * 1024;
 const OFFICIAL_LINKS = {
     ipi_requirements: "https://www.ige.ch/en/protecting-your-ip/trade-marks/before-you-apply/requirements-for-protection",
     ipi_goods_services: "https://www.ige.ch/en/protecting-your-ip/trade-marks/before-you-apply/your-ip-protection-strategy/list-of-goods-and-services",
     ipi_national_application: "https://www.ige.ch/en/protecting-your-ip/trade-marks/national-applications",
     ipi_fees: "https://www.ige.ch/en/protecting-your-ip/trade-marks/national-applications/costs-and-fees",
     ipi_duration: "https://www.ige.ch/en/protecting-your-ip/trade-marks/national-applications/duration-of-procedure",
+    ipi_opposition: "https://www.ige.ch/en/protecting-your-ip/trade-marks/after-registration/monitor-and-defend-your-trade-mark/filing-an-opposition",
     ipi_public_signs: "https://www.ige.ch/en/protecting-your-ip/trade-marks/before-you-apply/requirements-for-protection/grounds-for-refusal/protected-public-signs",
     ipi_use: "https://www.ige.ch/en/protecting-your-ip/trade-marks/after-registration/use-your-trade-mark",
     wipo_nice_2026: "https://www.wipo.int/en/web/madrid-system/w/news/2025/coming-on-january-1-2026-thirteenth-edition-of-the-nice-classification",
@@ -86,10 +90,13 @@ function sourceAgeDays(sourceDate, now = new Date()) {
 function officialLanguageWarnings(labels) {
     return labels
         .map((label) => {
-        const declared = label.language?.toLowerCase();
+        const declared = label.language?.trim().toLowerCase();
         const detected = detectLanguageHint(label.term);
         const language = declared || detected || "unknown";
         const classPart = label.class_number ? `Class ${label.class_number}: ` : "";
+        if (declared && !["de", "fr", "it", "en"].includes(declared)) {
+            return `${classPart}"${truncate(label.term, 90)}" declares unsupported language code "${truncate(declared, 20)}"; use de, fr, it, or en.`;
+        }
         if (language === "en") {
             return `${classPart}"${truncate(label.term, 90)}" appears to be English; Swiss national filings require German, French, or Italian labels.`;
         }
@@ -123,6 +130,16 @@ function isSwissDomicile(value) {
 function collapseForPlan(value) {
     return String(value ?? "").replace(/\s+/g, " ").trim();
 }
+function canonicalTafReference(value) {
+    const reference = collapseForPlan(value);
+    const tafMatch = reference.match(/^(?:TAF\s+)?B-(\d{1,5})\/(\d{4})$/i);
+    if (tafMatch)
+        return `TAF B-${tafMatch[1]}/${tafMatch[2]}`;
+    const atfMatch = reference.match(/^ATF\s+(\d+)\s+([IVX]+)\s+(\d+)$/i);
+    if (atfMatch)
+        return `ATF ${atfMatch[1]} ${atfMatch[2].toUpperCase()} ${atfMatch[3]}`;
+    throw new Error(`Invalid TAF reference "${truncate(reference, 80)}"; expected B-3601/2014, TAF B-3601/2014, or ATF 123 IV 45.`);
+}
 function translateSearchTokens(tokens) {
     const dictionary = {
         ai: ["ia", "ki", "intelligence artificielle", "kunstliche intelligenz", "intelligenza artificiale"],
@@ -151,11 +168,18 @@ function classifyTafEntrySignType(row) {
 export class SwissTrademarkCorpus {
     db;
     manifestPath;
-    constructor(dbPath = configuredDbPath(), manifestPath = defaultManifestPath()) {
+    constructor(dbPath = configuredDbPath(), manifestPath = configuredManifestPath()) {
         if (!existsSync(dbPath)) {
             throw new Error(`Swiss trademark database not found at ${dbPath}. Run npm run ingest first.`);
         }
         this.db = new Database(dbPath, { readonly: true, fileMustExist: true });
+        try {
+            assertCompatibleDatabase(this.db);
+        }
+        catch (error) {
+            this.db.close();
+            throw error;
+        }
         this.manifestPath = manifestPath;
     }
     close() {
@@ -165,7 +189,34 @@ export class SwissTrademarkCorpus {
         if (!existsSync(this.manifestPath)) {
             return { generated_at: new Date(0).toISOString(), sources: [], warnings: ["source-manifest.json not found"] };
         }
-        return JSON.parse(readFileSync(this.manifestPath, "utf8"));
+        const manifestBytes = statSync(this.manifestPath).size;
+        if (manifestBytes > MAX_SOURCE_MANIFEST_BYTES) {
+            throw new Error(`Source manifest at ${this.manifestPath} is ${manifestBytes} bytes; maximum is ${MAX_SOURCE_MANIFEST_BYTES}.`);
+        }
+        let parsed;
+        try {
+            parsed = JSON.parse(readFileSync(this.manifestPath, "utf8"));
+        }
+        catch (error) {
+            throw new Error(`Invalid source manifest JSON at ${this.manifestPath}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        const result = sourceManifestSchema.safeParse(parsed);
+        if (!result.success) {
+            const issue = result.error.issues[0];
+            const location = issue?.path.length ? issue.path.join(".") : "manifest";
+            throw new Error(`Invalid source manifest at ${this.manifestPath}: ${location}: ${issue?.message ?? "schema validation failed"}`);
+        }
+        const schemaVersion = Number(this.db.pragma("user_version", { simple: true }));
+        if (schemaVersion >= 1) {
+            const metadata = new Map(this.db.prepare("SELECT key, value FROM corpus_metadata").all().map((row) => [row.key, row.value]));
+            if (metadata.get("manifest_generated_at") !== result.data.generated_at) {
+                throw new Error("Source manifest timestamp does not match the bundled database metadata.");
+            }
+            if (metadata.get("source_set_sha256") !== sourceSetDigest(result.data.sources)) {
+                throw new Error("Source manifest inputs do not match the bundled database source-set digest.");
+            }
+        }
+        return result.data;
     }
     tafExtractionStats() {
         try {
@@ -410,7 +461,7 @@ export class SwissTrademarkCorpus {
         }
         if (ftsQuery) {
             rows = this.db
-                .prepare(`SELECT g.id, g.urn, m.title, m.trademark_number, m.application_number, m.status, m.stage,
+                .prepare(`SELECT g.id, g.urn, m.internal_id, m.title, m.trademark_number, m.application_number, m.status, m.stage,
                   g.class_number, g.goods_services, g.language_hint, g.source_date,
                   bm25(swissreg_goods_fts) AS raw_score
            FROM swissreg_goods_fts
@@ -424,7 +475,7 @@ export class SwissTrademarkCorpus {
                 const anyQuery = toFtsAnyQuery(query);
                 if (anyQuery && anyQuery !== ftsQuery) {
                     rows = this.db
-                        .prepare(`SELECT g.id, g.urn, m.title, m.trademark_number, m.application_number, m.status, m.stage,
+                        .prepare(`SELECT g.id, g.urn, m.internal_id, m.title, m.trademark_number, m.application_number, m.status, m.stage,
                       g.class_number, g.goods_services, g.language_hint, g.source_date,
                       bm25(swissreg_goods_fts) AS raw_score
                FROM swissreg_goods_fts
@@ -439,7 +490,7 @@ export class SwissTrademarkCorpus {
         }
         else {
             rows = this.db
-                .prepare(`SELECT g.id, g.urn, m.title, m.trademark_number, m.application_number, m.status, m.stage,
+                .prepare(`SELECT g.id, g.urn, m.internal_id, m.title, m.trademark_number, m.application_number, m.status, m.stage,
                   g.class_number, g.goods_services, g.language_hint, g.source_date, 0 AS raw_score
            FROM swissreg_goods_services g
            JOIN swissreg_marks m ON m.urn = g.urn
@@ -451,7 +502,9 @@ export class SwissTrademarkCorpus {
         const hasMore = rows.length > limit;
         return {
             results: rows.slice(0, limit).map((row) => ({
-                mark_id: row.id,
+                mark_id: row.internal_id ?? row.urn,
+                goods_services_id: row.id,
+                legacy_mark_id: row.id,
                 urn: row.urn,
                 title: row.title,
                 trademark_number: row.trademark_number,
@@ -530,53 +583,64 @@ export class SwissTrademarkCorpus {
             throw new Error("At least one Nice class is required.");
         const mode = input.mode ?? "superset";
         const limit = Math.min(Math.max(Number(input.limit ?? 20), 1), 50);
-        const rows = this.db
-            .prepare(`SELECT g.urn, m.title, m.trademark_number, m.application_number, m.status, m.stage,
-                g.class_number, g.goods_services
+        const requestedPlaceholders = requested.map(() => "?").join(", ");
+        const exactHaving = mode === "exact" ? " AND COUNT(DISTINCT g.class_number) = ?" : "";
+        const candidates = this.db
+            .prepare(`SELECT g.urn, m.internal_id, m.title, m.trademark_number, m.application_number, m.status, m.stage,
+                COUNT(DISTINCT g.class_number) AS class_count
          FROM swissreg_goods_services g
          JOIN swissreg_marks m ON m.urn = g.urn
-         ORDER BY g.urn, g.class_number`)
-            .all();
-        const byUrn = new Map();
-        for (const row of rows) {
+         GROUP BY g.urn, m.internal_id, m.title, m.trademark_number, m.application_number, m.status, m.stage
+         HAVING COUNT(DISTINCT CASE WHEN g.class_number IN (${requestedPlaceholders}) THEN g.class_number END) = ?${exactHaving}
+         ORDER BY class_count, m.title, g.urn
+         LIMIT ?`)
+            .all(...requested, requested.length, ...(mode === "exact" ? [requested.length] : []), limit);
+        if (candidates.length === 0) {
+            return {
+                requested_classes: requested,
+                mode,
+                matches: [],
+                corpus_notice: "Swissreg corpus is partial and is not a complete anteriority search.",
+            };
+        }
+        const urns = candidates.map((row) => String(row.urn));
+        const detailRows = this.db
+            .prepare(`SELECT urn, class_number, goods_services
+         FROM swissreg_goods_services
+         WHERE urn IN (${urns.map(() => "?").join(", ")})
+         ORDER BY urn, class_number, id`)
+            .all(...urns);
+        const detailsByUrn = new Map();
+        for (const row of detailRows) {
             const urn = String(row.urn);
-            const current = byUrn.get(urn) ??
-                {
-                    urn,
-                    title: String(row.title ?? ""),
-                    trademark_number: row.trademark_number,
-                    application_number: row.application_number,
-                    status: row.status,
-                    stage: row.stage,
-                    classes: new Set(),
-                    examples: {},
-                };
+            const current = detailsByUrn.get(urn) ?? { classes: [], examples: {} };
             const classNumber = Number(row.class_number);
-            current.classes.add(classNumber);
+            if (!current.classes.includes(classNumber))
+                current.classes.push(classNumber);
             const bucket = current.examples[String(classNumber)] ?? [];
             if (bucket.length < 2)
                 bucket.push(truncate(String(row.goods_services ?? ""), 180));
             current.examples[String(classNumber)] = bucket;
-            byUrn.set(urn, current);
+            detailsByUrn.set(urn, current);
         }
         const requestedKey = requested.join(",");
-        const matches = [...byUrn.values()]
-            .map((mark) => ({ ...mark, classes: [...mark.classes].sort((a, b) => a - b) }))
-            .filter((mark) => requested.every((classNumber) => mark.classes.includes(classNumber)))
-            .filter((mark) => (mode === "exact" ? mark.classes.join(",") === requestedKey : true))
-            .sort((a, b) => a.classes.length - b.classes.length || a.title.localeCompare(b.title))
-            .slice(0, limit)
-            .map((mark) => ({
-            urn: mark.urn,
-            title: mark.title,
-            trademark_number: mark.trademark_number,
-            application_number: mark.application_number,
-            status: mark.status,
-            stage: mark.stage,
-            classes: mark.classes,
-            match_type: mark.classes.join(",") === requestedKey ? "exact" : "superset",
-            representative_terms: mark.examples,
-        }));
+        const matches = candidates.map((mark) => {
+            const urn = String(mark.urn);
+            const details = detailsByUrn.get(urn) ?? { classes: [], examples: {} };
+            details.classes.sort((a, b) => a - b);
+            return {
+                urn,
+                mark_id: mark.internal_id ?? urn,
+                title: String(mark.title ?? ""),
+                trademark_number: mark.trademark_number,
+                application_number: mark.application_number,
+                status: mark.status,
+                stage: mark.stage,
+                classes: details.classes,
+                match_type: details.classes.join(",") === requestedKey ? "exact" : "superset",
+                representative_terms: details.examples,
+            };
+        });
         return {
             requested_classes: requested,
             mode,
@@ -650,8 +714,8 @@ export class SwissTrademarkCorpus {
         const classesHint = requireClasses(input.classes_hint);
         const limit = Math.min(Math.max(Number(input.limit ?? 10), 1), 50);
         const query = String(input.query ?? "").trim();
-        const params = [];
-        let urnSql = "";
+        const selectionParams = [];
+        let selectionWhere = "";
         let basis = "all_corpus";
         let matchedUrns = 0;
         let matchLimitReached = false;
@@ -668,56 +732,98 @@ export class SwissTrademarkCorpus {
                     basis: { mode: basis, query_matched_marks: 0, match_limit: 1000, exhaustive: true },
                 };
             }
-            urnSql = ` AND g.urn IN (${urns.map(() => "?").join(", ")})`;
-            params.push(...urns);
+            selectionWhere = `WHERE g.urn IN (${urns.map(() => "?").join(", ")})`;
+            selectionParams.push(...urns);
         }
-        if (!query && classesHint?.length) {
-            const where = classWhere(classesHint, "g.class_number");
-            urnSql = ` AND g.urn IN (SELECT DISTINCT urn FROM swissreg_goods_services g WHERE 1=1${where.sql})`;
-            params.push(...where.params);
+        else if (classesHint?.length) {
             basis = "all_marks_with_class_hint";
         }
-        const rows = this.db
-            .prepare(`SELECT g.urn, g.class_number, g.goods_services, m.title
-         FROM swissreg_goods_services g
-         JOIN swissreg_marks m ON m.urn = g.urn
-         WHERE 1=1${urnSql}
-         ORDER BY g.urn, g.class_number`)
-            .all(...params);
-        const byUrn = new Map();
-        for (const row of rows) {
-            const urn = String(row.urn);
-            const entry = byUrn.get(urn) ?? { title: String(row.title ?? ""), classes: new Set(), terms: new Map() };
-            const classNumber = Number(row.class_number);
-            entry.classes.add(classNumber);
-            const current = entry.terms.get(classNumber) ?? [];
-            if (current.length < 3)
-                current.push(truncate(row.goods_services, 120));
-            entry.terms.set(classNumber, current);
-            byUrn.set(urn, entry);
-        }
-        const combos = new Map();
-        for (const entry of byUrn.values()) {
-            const classes = [...entry.classes].sort((a, b) => a - b);
-            if (classesHint?.length && !classesHint.every((classNumber) => entry.classes.has(classNumber)))
-                continue;
-            const key = classes.join(",");
-            const combo = combos.get(key) ?? { classes, mark_count: 0, example_titles: [], representative_terms: {} };
-            combo.mark_count += 1;
-            if (combo.example_titles.length < 3 && entry.title)
-                combo.example_titles.push(entry.title);
-            for (const [classNumber, terms] of entry.terms) {
-                const bucket = combo.representative_terms[String(classNumber)] ?? [];
-                for (const term of terms) {
-                    if (bucket.length < 5)
-                        bucket.push(term);
-                }
-                combo.representative_terms[String(classNumber)] = bucket;
+        const hintPlaceholders = classesHint?.map(() => "?").join(", ") ?? "";
+        const hintHaving = classesHint?.length
+            ? `HAVING SUM(CASE WHEN class_number IN (${hintPlaceholders}) THEN 1 ELSE 0 END) = ?`
+            : "";
+        const cteSql = `
+      WITH ordered_classes AS (
+        SELECT g.urn, g.class_number
+        FROM swissreg_goods_services g
+        ${selectionWhere}
+        GROUP BY g.urn, g.class_number
+        ORDER BY g.urn, g.class_number
+      ),
+      mark_signatures AS (
+        SELECT urn, GROUP_CONCAT(class_number, ',') AS class_signature
+        FROM ordered_classes
+        GROUP BY urn
+        ${hintHaving}
+      )`;
+        const cteParams = [...selectionParams, ...(classesHint ?? []), ...(classesHint?.length ? [classesHint.length] : [])];
+        const combinationRows = this.db
+            .prepare(`${cteSql}
+         SELECT class_signature, COUNT(*) AS mark_count, MIN(urn) AS first_urn
+         FROM mark_signatures
+         GROUP BY class_signature
+         ORDER BY mark_count DESC, first_urn
+         LIMIT ?`)
+            .all(...cteParams, limit);
+        const signatures = combinationRows.map((row) => String(row.class_signature));
+        const combinations = combinationRows.map((row) => ({
+            classes: String(row.class_signature)
+                .split(",")
+                .map(Number),
+            mark_count: Number(row.mark_count),
+            example_titles: [],
+            representative_terms: {},
+        }));
+        if (signatures.length > 0) {
+            const signaturePlaceholders = signatures.map(() => "?").join(", ");
+            const representativeMarks = this.db
+                .prepare(`${cteSql},
+           ranked_marks AS (
+             SELECT ms.class_signature, ms.urn, m.title,
+                    ROW_NUMBER() OVER (PARTITION BY ms.class_signature ORDER BY m.title, ms.urn) AS rank
+             FROM mark_signatures ms
+             JOIN swissreg_marks m ON m.urn = ms.urn
+             WHERE ms.class_signature IN (${signaturePlaceholders})
+           )
+           SELECT class_signature, urn, title
+           FROM ranked_marks
+           WHERE rank <= 3
+           ORDER BY class_signature, rank`)
+                .all(...cteParams, ...signatures);
+            const combinationBySignature = new Map(signatures.map((signature, index) => [signature, combinations[index]]));
+            const signatureByUrn = new Map();
+            for (const row of representativeMarks) {
+                const signature = String(row.class_signature);
+                const urn = String(row.urn);
+                signatureByUrn.set(urn, signature);
+                const combination = combinationBySignature.get(signature);
+                const title = String(row.title ?? "");
+                if (combination && title && combination.example_titles.length < 3)
+                    combination.example_titles.push(title);
             }
-            combos.set(key, combo);
+            const representativeUrns = [...signatureByUrn.keys()];
+            if (representativeUrns.length > 0) {
+                const termRows = this.db
+                    .prepare(`SELECT urn, class_number, goods_services
+             FROM swissreg_goods_services
+             WHERE urn IN (${representativeUrns.map(() => "?").join(", ")})
+             ORDER BY urn, class_number, id`)
+                    .all(...representativeUrns);
+                for (const row of termRows) {
+                    const signature = signatureByUrn.get(String(row.urn));
+                    const combination = signature ? combinationBySignature.get(signature) : undefined;
+                    if (!combination)
+                        continue;
+                    const key = String(row.class_number);
+                    const terms = combination.representative_terms[key] ?? [];
+                    if (terms.length < 5)
+                        terms.push(truncate(row.goods_services, 120));
+                    combination.representative_terms[key] = terms;
+                }
+            }
         }
         return {
-            combinations: [...combos.values()].sort((a, b) => b.mark_count - a.mark_count).slice(0, limit),
+            combinations,
             corpus_notice: "Grouped by mark; Swissreg corpus is partial and is not a complete anteriority search.",
             basis: {
                 mode: basis,
@@ -757,7 +863,16 @@ export class SwissTrademarkCorpus {
         )`);
             params.push(...articleFilters.map((article) => `%${article}%`));
         }
-        if (classes?.length) {
+        if (classes?.length && outcomeFilters.length) {
+            filters.push(`EXISTS (
+          SELECT 1 FROM taf_entry_classes tc
+          WHERE tc.entry_id = e.entry_id
+            AND tc.class_number IN (${classes.map(() => "?").join(", ")})
+            AND tc.outcome IN (${outcomeFilters.map(() => "?").join(", ")})
+        )`);
+            params.push(...classes, ...outcomeFilters);
+        }
+        else if (classes?.length) {
             filters.push(`EXISTS (
           SELECT 1 FROM taf_entry_classes tc
           WHERE tc.entry_id = e.entry_id
@@ -765,7 +880,7 @@ export class SwissTrademarkCorpus {
         )`);
             params.push(...classes);
         }
-        if (outcomeFilters.length) {
+        else if (outcomeFilters.length) {
             filters.push(`EXISTS (
           SELECT 1 FROM taf_entry_classes tc
           WHERE tc.entry_id = e.entry_id
@@ -835,17 +950,17 @@ export class SwissTrademarkCorpus {
         return { entry: this.tafEntry(row) };
     }
     tafGetDecision(input) {
-        const normalized = collapseForPlan(input.reference).replace(/^TAF\s+/i, "");
+        const reference = canonicalTafReference(input.reference);
         const row = this.db
             .prepare(`SELECT e.*, r.taf_ref AS matched_reference
          FROM taf_entry_refs r
          JOIN taf_entries e ON e.entry_id = r.entry_id
-         WHERE r.taf_ref = ? OR r.taf_ref LIKE ?
+         WHERE r.taf_ref = ?
          ORDER BY e.page_start, e.entry_id
          LIMIT 1`)
-            .get(input.reference, `%${normalized}%`);
+            .get(reference);
         if (!row)
-            throw new Error(`TAF decision not found for reference ${input.reference}.`);
+            throw new Error(`TAF decision not found for reference ${reference}.`);
         return { reference: row.matched_reference, entry: this.tafEntry(row) };
     }
     findSimilarTafSigns(input) {
@@ -1172,8 +1287,16 @@ export class SwissTrademarkCorpus {
             missing_required.push("Exact sign representation.");
         if (!input.sign?.type)
             missing_required.push("Trade mark type: word, figurative, combined, 3D, colour, sound, position, etc.");
-        if (!input.goods_services?.length)
+        if (!input.goods_services?.length) {
             missing_required.push("Goods/services list by Nice class.");
+        }
+        else {
+            for (const entry of input.goods_services) {
+                const usableTerms = entry.terms.map((term) => collapseForPlan(term)).filter(Boolean);
+                if (usableTerms.length === 0)
+                    missing_required.push(`At least one non-empty goods/services term for class ${entry.class_number}.`);
+            }
+        }
         if (!input.planned_use)
             next_questions.push("For which concrete products/services will the mark be used in the next five years?");
         if (!input.territories?.length)
@@ -1184,16 +1307,20 @@ export class SwissTrademarkCorpus {
             missing_required.push("Priority claim details and supporting filing data.");
         const labels = (input.goods_services ?? []).flatMap((entry) => {
             const [classNumber] = requireClasses([entry.class_number]) ?? [];
-            return entry.terms.map((term) => ({ class_number: classNumber, term, language: entry.language }));
+            return entry.terms
+                .map((term) => collapseForPlan(term))
+                .filter(Boolean)
+                .map((term) => ({ class_number: classNumber, term, language: entry.language }));
         });
         warnings.push(...officialLanguageWarnings(labels));
+        const uniqueClassCount = new Set((input.goods_services ?? []).map((entry) => entry.class_number)).size || 1;
         return {
             missing_required,
             warnings,
             next_questions,
             ready_for_drafting: missing_required.length === 0,
             ready_for_filing: missing_required.length === 0 && warnings.length === 0,
-            filing_requirements: this.filingRequirementsSnapshot({ classes_count: input.goods_services?.length ?? 1 }),
+            filing_requirements: this.filingRequirementsSnapshot({ classes_count: uniqueClassCount }),
         };
     }
     tafEntry(row) {

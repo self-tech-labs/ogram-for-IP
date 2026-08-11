@@ -23,7 +23,7 @@ Use the four local MCP servers as the canonical source for data retrieval:
 
 The Swissreg source exposes mandataire groups as filter metadata, but does not map every goods/services row to a mandataire; the facet IDs do not join to mark IDs. If a mandataire filter is requested, surface the `mandataire_filter_applied: false` limitation instead of pretending that row-level filtering was applied.
 
-Do not invent goods/services labels. Labels must come from Nice headings, WDL terms, or a directly justified limitation of a WDL term, calibrated against Swissreg examples when useful.
+Do not present an unsupported label as pre-approved. Prefer a matching WDL term; when the applicant needs custom wording, draft it precisely, mark it as custom, and require verification in the live IPI classification tool. Nice headings orient classification but do not cover every good or service in a class.
 
 ## References
 
@@ -44,7 +44,7 @@ Use references systematically in practitioner mode and whenever a sign is border
 4. Run `sign_risk_screen` before the TAF search. For borderline signs, search TAF decisions and similar local signs before classifying the risk. Treat `find_similar_signs` as local structural/lexical support, not embeddings.
 5. Prepare anteriority search strategy with `clearance_search_plan`. The plugin does not perform a complete Swiss clearance search; explain that IPI does not examine relative grounds and opposition risk remains.
 6. Identify Nice classes from business activities. Use `get_class_combinations` and `get_sector_benchmark` for comparable sectors where helpful and state whether class-combination counts are exhaustive for the local corpus or query-limited.
-7. Draft labels with the funnel method: Nice heading first, WDL terms next, Swissreg calibration, then a sector limitation where the heading is broader than the real activity.
+7. Draft labels from the applicant's actual and planned commercial activity: use Nice headings to orient the class, WDL terms for accepted wording, Swissreg examples for calibration, and a precise custom limitation only when necessary. Never claim an entire heading merely because the business touches one item in it.
 8. Run `filing_requirements_snapshot` for fee/timing/source reminders in full filing outputs.
 9. Deliver an actionable filing memo: sign/type, applicant gaps, risks, classes, full labels, official-language status, sources, anteriority strategy, cost reminder, filing link, and next steps.
 
@@ -52,7 +52,7 @@ Use references systematically in practitioner mode and whenever a sign is border
 
 Ask entrepreneurs questions in business language, not class numbers. Ask only for decisions that affect protection scope: actual activities, product/service commercialization, planned extensions, geography, and risk tolerance.
 
-For practitioners, provide source-backed reasoning, cite statutes and precedents where the local corpus supports them, and mark uncertainty explicitly.
+For practitioners, provide source-backed reasoning, cite statutes and precedents only where the source supports the proposition, and mark uncertainty explicitly. Never infer a holding from an extracted title or snippet alone; retrieve the full local entry and recommend checking the official decision for material reliance.
 
 When source data is partial, say so. Swissreg is a professional example corpus, not a complete anteriority search.
 
@@ -76,4 +76,4 @@ For filing-ready outputs, also include:
 - current stored fee estimate with a reminder to verify the IPI source at filing time;
 - post-filing watch items: Swissreg publication, three-month opposition window, and five-year use requirement.
 
-Always recommend verification of current IPI fees and filing requirements at the official source at the moment of deposit.
+Always recommend verification of current IPI fees, accepted wording, and filing requirements at the official source at the moment of deposit. Never describe a planned or local-corpus search as a completed live clearance search.

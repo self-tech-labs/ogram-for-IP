@@ -1,15 +1,29 @@
-import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, relative } from "node:path";
 import Database from "better-sqlite3";
 import ExcelJS from "exceljs";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 import { extractTafEntry, segmentTafReport, summarizeTafExtractions } from "./langextract.js";
 import { collapseWhitespace, detectLanguageHint, normalizeText, truncate } from "./normalize.js";
-import { configuredSourceRoot, defaultDbPath, defaultManifestPath } from "./paths.js";
+import { configuredManifestPath, configuredSourceRoot, defaultDbPath } from "./paths.js";
+import { applySchemaMetadata, assertCompatibleDatabase } from "./schema.js";
+import { sourceSetDigest } from "./types.js";
 const SOURCE_DATE = "2026-05-05";
 const NICE_VERSION = "NCL(13-2026)";
+function reproducibleTimestamp() {
+    const epoch = process.env.SOURCE_DATE_EPOCH;
+    if (epoch != null && !/^\d+$/.test(epoch)) {
+        throw new Error("SOURCE_DATE_EPOCH must be a non-negative integer number of seconds.");
+    }
+    const date = epoch == null ? new Date() : new Date(Number(epoch) * 1_000);
+    if (Number.isNaN(date.getTime()))
+        throw new Error("SOURCE_DATE_EPOCH is outside the supported date range.");
+    date.setUTCMilliseconds(0);
+    return date.toISOString();
+}
+const BUILD_TIMESTAMP = reproducibleTimestamp();
 function sha256(path) {
     return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
@@ -34,7 +48,7 @@ function sourceInfo(name, sourceRoot, path, rows, warnings, metadata) {
         name,
         path: relative(sourceRoot, path).normalize("NFC"),
         source_date: SOURCE_DATE,
-        ingested_at: new Date().toISOString(),
+        ingested_at: BUILD_TIMESTAMP,
         sha256: sha256(path),
         rows,
         warnings,
@@ -143,7 +157,6 @@ function createSchema(db) {
       goods_services TEXT NOT NULL,
       language_hint TEXT,
       source_date TEXT,
-      source_file TEXT NOT NULL,
       FOREIGN KEY (urn) REFERENCES swissreg_marks(urn)
     );
 
@@ -234,6 +247,101 @@ function createSchema(db) {
     CREATE INDEX idx_taf_entry_classes ON taf_entry_classes(class_number, outcome);
     CREATE INDEX idx_taf_entry_tags ON taf_entry_tags(risk_tag);
   `);
+    applySchemaMetadata(db);
+}
+function validateGeneratedDatabase(path, manifest) {
+    const expectedCounts = new Map(manifest.sources.map((source) => [source.name, source.rows]));
+    const checks = [
+        ["nice_headings", "Nice headings"],
+        ["wdl_terms", "WDL IPI"],
+        ["swissreg_goods_services", "Swissreg Produits-services"],
+        ["class_examples", "Class examples"],
+        ["taf_entries", "TAF precedents"],
+    ];
+    const validationDb = new Database(path, { readonly: true, fileMustExist: true });
+    try {
+        assertCompatibleDatabase(validationDb);
+        const quickCheck = validationDb.pragma("quick_check", { simple: true });
+        if (quickCheck !== "ok")
+            throw new Error(`Generated database quick check failed: ${String(quickCheck)}`);
+        const integrity = validationDb.pragma("integrity_check", { simple: true });
+        if (integrity !== "ok")
+            throw new Error(`Generated database integrity check failed: ${String(integrity)}`);
+        const foreignKeyErrors = validationDb.pragma("foreign_key_check");
+        if (foreignKeyErrors.length > 0)
+            throw new Error(`Generated database has ${foreignKeyErrors.length} foreign-key violations.`);
+        const metadata = new Map(validationDb.prepare("SELECT key, value FROM corpus_metadata").all().map((row) => [row.key, row.value]));
+        if (metadata.get("manifest_generated_at") !== manifest.generated_at) {
+            throw new Error("Generated database manifest timestamp does not match the provenance manifest.");
+        }
+        if (metadata.get("source_set_sha256") !== sourceSetDigest(manifest.sources)) {
+            throw new Error("Generated database source-set digest does not match the provenance manifest.");
+        }
+        for (const [table, sourceName] of checks) {
+            const expected = expectedCounts.get(sourceName);
+            const actual = Number(validationDb.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count);
+            if (expected == null || actual !== expected) {
+                throw new Error(`Generated database count mismatch for ${table}: expected ${expected ?? "source metadata"}, found ${actual}.`);
+            }
+        }
+    }
+    finally {
+        validationDb.close();
+    }
+}
+function replaceGeneratedArtifacts(artifacts) {
+    const replacementId = `${process.pid}-${randomUUID()}`;
+    const states = artifacts.map(({ temporaryPath, targetPath }) => ({
+        temporaryPath,
+        targetPath,
+        backupPath: `${targetPath}.backup-${replacementId}`,
+        hadTarget: false,
+        installed: false,
+    }));
+    try {
+        // Keep every previous artifact until the complete database/manifest pair is
+        // installed. This prevents an I/O failure on the second rename from leaving
+        // a new database paired with an old provenance manifest (or vice versa).
+        for (const state of states) {
+            if (!existsSync(state.targetPath))
+                continue;
+            renameSync(state.targetPath, state.backupPath);
+            state.hadTarget = true;
+        }
+        for (const state of states) {
+            renameSync(state.temporaryPath, state.targetPath);
+            state.installed = true;
+        }
+    }
+    catch (error) {
+        const rollbackErrors = [];
+        for (const state of [...states].reverse()) {
+            try {
+                if (state.installed && existsSync(state.targetPath))
+                    rmSync(state.targetPath, { force: true });
+            }
+            catch (rollbackError) {
+                rollbackErrors.push(rollbackError);
+            }
+        }
+        for (const state of [...states].reverse()) {
+            try {
+                if (state.hadTarget && existsSync(state.backupPath))
+                    renameSync(state.backupPath, state.targetPath);
+            }
+            catch (rollbackError) {
+                rollbackErrors.push(rollbackError);
+            }
+        }
+        if (rollbackErrors.length > 0) {
+            throw new AggregateError([error, ...rollbackErrors], "Generated artifact installation failed and could not be fully rolled back.");
+        }
+        throw error;
+    }
+    for (const state of states) {
+        if (state.hadTarget)
+            rmSync(state.backupPath, { force: true });
+    }
 }
 function ingestWdl(db, sourceRoot) {
     const path = resolveSourcePath(sourceRoot, "Classification Nice", "wdl_toutes_classes_FR.csv");
@@ -378,8 +486,8 @@ async function ingestSwissreg(db, sourceRoot) {
   `);
     const goodsInsert = db.prepare(`
     INSERT INTO swissreg_goods_services
-      (id, urn, class_number, goods_services, language_hint, source_date, source_file)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+      (id, urn, class_number, goods_services, language_hint, source_date)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
     const filterInsert = db.prepare(`
     INSERT INTO swissreg_filter_values (mandataire_group, query, facet_value, result_count)
@@ -396,7 +504,7 @@ async function ingestSwissreg(db, sourceRoot) {
                 return;
             }
             markInsert.run(urn, row.internal_id || "", row.trademark_number || "", row.application_number || "", row.title || "", row.status || "", row.stage || "");
-            goodsInsert.run(`swissreg:${index + 1}`, urn, classNumber, goods, detectLanguageHint(goods), SOURCE_DATE, "Exemples marques/swissreg_mandataires_produits_services_PARTIEL_2026-05-05.xlsx");
+            goodsInsert.run(`swissreg:${index + 1}`, urn, classNumber, goods, detectLanguageHint(goods), SOURCE_DATE);
             inserted += 1;
         });
         filterRows.forEach((row) => {
@@ -498,38 +606,62 @@ async function main() {
     if (!existsSync(sourceRoot))
         throw new Error(`Source root not found: ${sourceRoot}`);
     const dbPath = process.env.SWISS_TRADEMARK_DB || defaultDbPath();
-    const manifestPath = defaultManifestPath();
+    const manifestPath = configuredManifestPath();
     mkdirSync(dirname(dbPath), { recursive: true });
-    if (existsSync(dbPath))
-        rmSync(dbPath);
-    if (existsSync(`${dbPath}-wal`))
-        rmSync(`${dbPath}-wal`);
-    if (existsSync(`${dbPath}-shm`))
-        rmSync(`${dbPath}-shm`);
-    const db = new Database(dbPath);
-    createSchema(db);
-    const sources = [];
-    sources.push(ingestWdl(db, sourceRoot));
-    sources.push(await ingestNice(db, sourceRoot));
-    sources.push(await ingestSwissreg(db, sourceRoot));
-    sources.push(await ingestClassExamples(db, sourceRoot));
-    sources.push(await ingestTaf(db, sourceRoot));
-    db.pragma("wal_checkpoint(TRUNCATE)");
-    db.pragma("journal_mode = DELETE");
-    db.close();
-    const manifest = {
-        generated_at: new Date().toISOString(),
-        sources,
-        warnings: sources.flatMap((source) => source.warnings.map((warning) => `${source.name}: ${warning}`)),
-    };
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-    console.log(`Generated ${dbPath}`);
-    console.log(`Generated ${manifestPath}`);
-    for (const source of sources) {
-        console.log(`${source.name}: ${source.rows} rows (${source.warnings.length} warnings)`);
+    mkdirSync(dirname(manifestPath), { recursive: true });
+    const suffix = `${process.pid}-${randomUUID()}`;
+    const temporaryDbPath = join(dirname(dbPath), `.${basename(dbPath)}.${suffix}.tmp`);
+    const temporaryManifestPath = join(dirname(manifestPath), `.${basename(manifestPath)}.${suffix}.tmp`);
+    let db = null;
+    try {
+        db = new Database(temporaryDbPath);
+        createSchema(db);
+        const sources = [];
+        sources.push(ingestWdl(db, sourceRoot));
+        sources.push(await ingestNice(db, sourceRoot));
+        sources.push(await ingestSwissreg(db, sourceRoot));
+        sources.push(await ingestClassExamples(db, sourceRoot));
+        sources.push(await ingestTaf(db, sourceRoot));
+        const manifest = {
+            generated_at: BUILD_TIMESTAMP,
+            sources,
+            warnings: sources.flatMap((source) => source.warnings.map((warning) => `${source.name}: ${warning}`)),
+        };
+        const insertMetadata = db.prepare("INSERT OR REPLACE INTO corpus_metadata (key, value) VALUES (?, ?)");
+        insertMetadata.run("manifest_generated_at", manifest.generated_at);
+        insertMetadata.run("source_set_sha256", sourceSetDigest(manifest.sources));
+        db.pragma("wal_checkpoint(TRUNCATE)");
+        db.pragma("journal_mode = DELETE");
+        db.close();
+        db = null;
+        validateGeneratedDatabase(temporaryDbPath, manifest);
+        writeFileSync(temporaryManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+        replaceGeneratedArtifacts([
+            { temporaryPath: temporaryDbPath, targetPath: dbPath },
+            { temporaryPath: temporaryManifestPath, targetPath: manifestPath },
+        ]);
+        console.log(`Generated ${dbPath}`);
+        console.log(`Generated ${manifestPath}`);
+        for (const source of sources) {
+            console.log(`${source.name}: ${source.rows} rows (${source.warnings.length} warnings)`);
+        }
+        if (manifest.warnings.length) {
+            console.log(`Warnings:\n${manifest.warnings.map((warning) => `- ${truncate(warning, 180)}`).join("\n")}`);
+        }
     }
-    if (manifest.warnings.length) {
-        console.log(`Warnings:\n${manifest.warnings.map((warning) => `- ${truncate(warning, 180)}`).join("\n")}`);
+    finally {
+        if (db) {
+            try {
+                db.close();
+            }
+            catch {
+                // The original ingestion error is more useful than a secondary close failure.
+            }
+        }
+        for (const path of [temporaryDbPath, `${temporaryDbPath}-wal`, `${temporaryDbPath}-shm`, temporaryManifestPath]) {
+            if (existsSync(path))
+                rmSync(path, { force: true });
+        }
     }
 }
 main().catch((error) => {

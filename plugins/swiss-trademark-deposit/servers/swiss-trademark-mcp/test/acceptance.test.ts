@@ -35,7 +35,9 @@ describe("acceptance scenario data substrate", () => {
     const c = new SwissTrademarkCorpus();
     const stats = c.corpusStats();
     expect(stats.warnings.join("\n")).not.toMatch(/EUIPO required/i);
-    expect(c.tafSearchPrecedents({ query: "descriptif boulangerie", limit: 5 }).results.length).toBeGreaterThanOrEqual(0);
+    const precedents = c.tafSearchPrecedents({ query: "descriptif boulangerie", limit: 5 });
+    expect(precedents.results.length).toBeGreaterThan(0);
+    expect(precedents.results.some((entry) => entry.risk_tags.includes("descriptive"))).toBe(true);
     c.close();
   });
 });

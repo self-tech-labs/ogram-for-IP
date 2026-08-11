@@ -1,34 +1,58 @@
 {
   "name": "swiss-trademark-deposit",
   "description": "Assistant open-source de depot de marques suisses aupres de l'IPI, avec NCL(13-2026), WDL, corpus Swissreg, controles de depot et jurisprudence TAF.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "ogram.ch and enodo.ch",
     "url": "https://ogram.ch"
   },
-  "contributors": [
-    {
-      "name": "ogram.ch",
-      "url": "https://ogram.ch",
-      "role": "Legaltech AI technical side"
-    },
-    {
-      "name": "enodo.ch",
-      "url": "https://enodo.ch",
-      "role": "Law firm"
-    }
-  ],
   "homepage": "https://github.com/self-tech-labs/ogram-for-IP",
   "repository": "https://github.com/self-tech-labs/ogram-for-IP.git",
   "license": "MIT",
-  "keywords": ["swiss", "trademark", "intellectual-property", "lawyers", "switzerland", "marques", "IPI", "Nice", "WDL", "Swissreg", "TAF", "MCP"],
+  "keywords": [
+    "swiss",
+    "trademark",
+    "intellectual-property",
+    "lawyers",
+    "switzerland",
+    "marques",
+    "IPI",
+    "Nice",
+    "WDL",
+    "Swissreg",
+    "TAF",
+    "MCP"
+  ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
   "commands": "./commands/",
-  "interface": {
-    "displayName": "Swiss Trademark Deposit",
-    "shortDescription": "Prepare Swiss trademark filings with local IPI, Nice, Swissreg, and TAF sources.",
-    "category": "Legal",
-    "capabilities": ["MCP", "Local", "Offline", "Legal workflow"]
+  "mcpServers": {
+    "nice-headings": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "nice-headings"
+      ]
+    },
+    "wdl": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "wdl"
+      ]
+    },
+    "swissreg-corpus": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "swissreg-corpus"
+      ]
+    },
+    "taf-decisions": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp-server.mjs",
+        "taf-decisions"
+      ]
+    }
   }
 }

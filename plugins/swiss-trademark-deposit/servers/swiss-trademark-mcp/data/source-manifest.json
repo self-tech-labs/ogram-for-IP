@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-16T19:09:47.177Z",
+  "generated_at": "2026-08-04T20:35:01.000Z",
   "sources": [
     {
       "name": "WDL IPI",
       "path": "Classification Nice/wdl_toutes_classes_FR.csv",
       "source_date": "2026-05-05",
-      "ingested_at": "2026-05-16T19:09:40.869Z",
+      "ingested_at": "2026-08-04T20:35:01.000Z",
       "sha256": "9fbac651d0a36cf89a88c90aaf5df66d8429ae846ea8612f2c4cf57925f854eb",
       "rows": 41539,
       "warnings": [
@@ -15,9 +15,9 @@
     },
     {
       "name": "Nice headings",
-      "path": "Classification Nice/Intitulés généraux.docx",
+      "path": "Classification Nice/Intitulés généraux.docx",
       "source_date": "2026-05-05",
-      "ingested_at": "2026-05-16T19:09:40.915Z",
+      "ingested_at": "2026-08-04T20:35:01.000Z",
       "sha256": "01c31aca08814865c0e7cf7953e7891d0b6e4c28c84abe2b089b8ad9c5ab4e93",
       "rows": 45,
       "warnings": []
@@ -26,7 +26,7 @@
       "name": "Swissreg Produits-services",
       "path": "Exemples marques/swissreg_mandataires_produits_services_PARTIEL_2026-05-05.xlsx",
       "source_date": "2026-05-05",
-      "ingested_at": "2026-05-16T19:09:46.399Z",
+      "ingested_at": "2026-08-04T20:35:01.000Z",
       "sha256": "38b4230883722a9339cfc04592a92488e76eb3097227f0f47b540d024fed4516",
       "rows": 75155,
       "warnings": [
@@ -37,7 +37,7 @@
       "name": "Class examples",
       "path": "Exemples marques/Liste classes.xlsx",
       "source_date": "2026-05-05",
-      "ingested_at": "2026-05-16T19:09:46.454Z",
+      "ingested_at": "2026-08-04T20:35:01.000Z",
       "sha256": "0dee22cd1f2e7eabc12523926cac272ea7818730e370384e857d7d23f8a8836e",
       "rows": 1346,
       "warnings": []
@@ -46,7 +46,7 @@
       "name": "TAF precedents",
       "path": "Jurisprudence TAF/report_2026-05-05.pdf",
       "source_date": "2026-05-05",
-      "ingested_at": "2026-05-16T19:09:47.027Z",
+      "ingested_at": "2026-08-04T20:35:01.000Z",
       "sha256": "1fc44c7fd36830cb4a9b13c75d2b2d34e48a2c847e23d0de23c729b74f855068",
       "rows": 549,
       "warnings": [],

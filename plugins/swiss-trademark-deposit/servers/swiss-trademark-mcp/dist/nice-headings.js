@@ -1,32 +1,37 @@
 #!/usr/bin/env node
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { resourceResult, runCorpusServer, toolResult } from "./mcp-shared.js";
+import { applicantSchema, goodsServicesEntriesSchema, niceClassSchema, niceClassesSchema, optionalShortTextSchema, priorityClaimSchema, signSchema, territoriesSchema, } from "./mcp-schemas.js";
+import { READ_ONLY_TOOL_ANNOTATIONS, resourceResult, runCorpusServer, toolResult } from "./mcp-shared.js";
 await runCorpusServer("nice-headings", (server, corpus) => {
     server.registerTool("get_nice_heading", {
         title: "Get Nice heading",
         description: "Return the official Nice heading for one class.",
+        annotations: READ_ONLY_TOOL_ANNOTATIONS,
         inputSchema: {
-            class_number: z.number().int().min(1).max(45),
+            class_number: niceClassSchema,
         },
     }, async (args) => toolResult(corpus.getNiceHeading({ class_number: args.class_number })));
     server.registerTool("list_nice_headings", {
         title: "List Nice headings",
         description: "Return all 45 official Nice class headings.",
+        annotations: READ_ONLY_TOOL_ANNOTATIONS,
         inputSchema: {},
     }, async () => toolResult(corpus.listNiceHeadings()));
     server.registerTool("nice_get_headings", {
         title: "Get Nice headings",
         description: "Compatibility alias: return official Nice headings for selected classes, or all 45.",
+        annotations: READ_ONLY_TOOL_ANNOTATIONS,
         inputSchema: {
-            classes: z.array(z.number().int().min(1).max(45)).optional(),
+            classes: niceClassesSchema.optional(),
         },
     }, async (args) => toolResult(corpus.niceGetHeadings(args)));
     server.registerTool("filing_requirements_snapshot", {
         title: "Filing requirements snapshot",
         description: "Return stored IPI/WIPO filing facts, official links, and a fee estimate. Must be verified at filing time.",
+        annotations: READ_ONLY_TOOL_ANNOTATIONS,
         inputSchema: {
-            classes_count: z.number().int().min(1).max(45).optional(),
+            classes_count: niceClassSchema.optional(),
             electronic: z.boolean().optional(),
             expedited: z.boolean().optional(),
         },
@@ -34,43 +39,21 @@ await runCorpusServer("nice-headings", (server, corpus) => {
     server.registerTool("filing_intake_check", {
         title: "Filing intake check",
         description: "Validate whether the information needed for a Swiss trademark filing memo is present.",
+        annotations: READ_ONLY_TOOL_ANNOTATIONS,
         inputSchema: {
-            applicant: z
-                .object({
-                name: z.string().optional(),
-                domicile_country: z.string().optional(),
-                representative_in_ch: z.boolean().optional(),
-            })
-                .optional(),
-            sign: z
-                .object({
-                text: z.string().optional(),
-                type: z.string().optional(),
-                representation_provided: z.boolean().optional(),
-                color_claim: z.string().nullable().optional(),
-            })
-                .optional(),
-            goods_services: z
-                .array(z.object({
-                class_number: z.number().int().min(1).max(45),
-                terms: z.array(z.string().min(1)),
-                language: z.string().optional(),
-            }))
-                .optional(),
-            priority_claim: z
-                .object({
-                claimed: z.boolean().optional(),
-                details: z.string().optional(),
-            })
-                .optional(),
-            planned_use: z.string().optional(),
-            territories: z.array(z.string()).optional(),
-            risk_tolerance: z.string().optional(),
+            applicant: applicantSchema.optional(),
+            sign: signSchema.optional(),
+            goods_services: goodsServicesEntriesSchema.optional(),
+            priority_claim: priorityClaimSchema.optional(),
+            planned_use: optionalShortTextSchema.optional(),
+            territories: territoriesSchema.optional(),
+            risk_tolerance: optionalShortTextSchema.optional(),
         },
     }, async (args) => toolResult(corpus.filingIntakeCheck(args)));
     server.registerTool("corpus_stats", {
         title: "Corpus stats",
         description: "Return local corpus counts, source dates, and ingestion warnings.",
+        annotations: READ_ONLY_TOOL_ANNOTATIONS,
         inputSchema: {},
     }, async () => toolResult(corpus.corpusStats()));
     server.registerResource("nice-headings", "nice://headings", {

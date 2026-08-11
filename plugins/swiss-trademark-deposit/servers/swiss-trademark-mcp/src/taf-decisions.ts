@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 import { z } from "zod";
-import { runCorpusServer, toolResult } from "./mcp-shared.js";
+import {
+  goodsServicesTextListSchema,
+  identifierSchema,
+  limit50Schema,
+  niceClassSchema,
+  niceClassesSchema,
+  offsetSchema,
+  querySchema,
+  shortTextListSchema,
+  shortTextSchema,
+} from "./mcp-schemas.js";
+import { READ_ONLY_TOOL_ANNOTATIONS, runCorpusServer, toolResult } from "./mcp-shared.js";
 
 await runCorpusServer("taf-decisions", (server, corpus) => {
   server.registerTool(
@@ -8,13 +19,14 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Search TAF decisions",
       description: "Search TAF/IGE absolute-ground precedent extracts.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        nice_class: z.number().int().min(1).max(45).optional(),
-        article_lpm: z.string().optional(),
-        outcome: z.string().optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        query: querySchema.optional(),
+        nice_class: niceClassSchema.optional(),
+        article_lpm: shortTextSchema.optional(),
+        outcome: shortTextSchema.optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) =>
@@ -35,8 +47,9 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Get TAF decision",
       description: "Return a TAF entry by TAF reference, for example B-3601/2014.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        reference: z.string().min(1),
+        reference: identifierSchema,
       },
     },
     async (args) => toolResult(corpus.tafGetDecision({ reference: args.reference })),
@@ -47,11 +60,12 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Find similar signs",
       description: "Find TAF entries with comparable sign wording or sign structure using local lexical/fuzzy matching.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        sign: z.string().min(1),
+        sign: identifierSchema,
         sign_type: z.enum(["verbal", "figurative", "combined"]).optional(),
-        nice_classes: z.array(z.number().int().min(1).max(45)).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
+        nice_classes: niceClassesSchema.optional(),
+        limit: limit50Schema.optional(),
       },
     },
     async (args) => toolResult(corpus.findSimilarTafSigns(args)),
@@ -62,14 +76,15 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Search TAF precedents",
       description: "Compatibility alias for searching segmented TAF/IGE absolute-ground precedent extracts.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        articles: z.array(z.string()).optional(),
-        classes: z.array(z.number().int().min(1).max(45)).optional(),
-        outcomes: z.array(z.string()).optional(),
-        risk_tags: z.array(z.string()).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        query: querySchema.optional(),
+        articles: shortTextListSchema.optional(),
+        classes: niceClassesSchema.optional(),
+        outcomes: shortTextListSchema.optional(),
+        risk_tags: shortTextListSchema.optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.tafSearchPrecedents(args)),
@@ -80,8 +95,9 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Get TAF entry",
       description: "Compatibility alias: return one complete segmented TAF entry by internal entry id.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        entry_id: z.string().min(1),
+        entry_id: identifierSchema,
       },
     },
     async (args) => toolResult(corpus.tafGetEntry(args)),
@@ -92,11 +108,12 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Sign risk screen",
       description: "Screen a sign for obvious Swiss absolute-ground issues before precedent search.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        sign: z.string().min(1),
-        classes: z.array(z.number().int().min(1).max(45)).optional(),
-        goods_services: z.array(z.string()).optional(),
-        mark_type: z.string().optional(),
+        sign: identifierSchema,
+        classes: niceClassesSchema.optional(),
+        goods_services: goodsServicesTextListSchema.optional(),
+        mark_type: shortTextSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.signRiskScreen(args)),
@@ -107,6 +124,7 @@ await runCorpusServer("taf-decisions", (server, corpus) => {
     {
       title: "Corpus stats",
       description: "Return local corpus counts, source dates, and ingestion warnings.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {},
     },
     async () => toolResult(corpus.corpusStats()),

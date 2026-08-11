@@ -17,4 +17,4 @@ Redige les classes et libelles pour l'activite suivante:
 
 $ARGUMENTS
 
-Utilise obligatoirement les chapeaux Nice, la WDL et les exemples Swissreg pertinents. Ne livre aucun libelle sans source ou justification de derivation proche. Verifie que la liste finale est en allemand, francais ou italien pour un depot national suisse.
+Utilise les intitulés Nice pour orienter la classe, puis la WDL et les exemples Swissreg pertinents pour calibrer le libellé. N'inclus pas automatiquement l'intitulé complet d'une classe: pars des activités réelles et prévues. Distingue clairement les termes WDL exacts des formulations personnalisées; toute formulation personnalisée doit être précise et signalée pour vérification dans l'outil de classification IPI en direct. Vérifie que la liste finale est en allemand, français ou italien pour un dépôt national suisse.

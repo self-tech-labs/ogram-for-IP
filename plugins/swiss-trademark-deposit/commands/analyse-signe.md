@@ -12,4 +12,4 @@ Analyse la capacite d'enregistrement du signe suivant en Suisse:
 
 $ARGUMENTS
 
-Distingue motifs absolus et motifs relatifs. Lance le screening de risque, puis recherche les decisions TAF pertinentes et les signes comparables avant toute conclusion orange ou rouge. Donne une conclusion nuancee, sourcee, avec pistes de sauvetage si le signe est faible.
+Distingue motifs absolus et motifs relatifs. Lance le screening de risque, puis recherche les décisions TAF pertinentes et les signes comparables avant toute conclusion orange ou rouge. Récupère l'entrée locale complète avant de t'appuyer sur une décision et recommande la vérification de la décision officielle lorsque la conclusion en dépend. Donne une conclusion nuancée, sourcée, avec pistes de sauvetage si le signe est faible.

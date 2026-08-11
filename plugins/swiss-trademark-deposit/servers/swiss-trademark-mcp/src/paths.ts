@@ -16,11 +16,15 @@ export function defaultManifestPath(): string {
 }
 
 export function defaultSourceRoot(): string {
-  return resolve(packageRoot(), "../../../..", "swiss-trademark-deposit-developer-package-2026-05-05");
+  return resolve(packageRoot(), "../../../..", "data-sources", "2026-05-05");
 }
 
 export function configuredDbPath(): string {
   return process.env.SWISS_TRADEMARK_DB || defaultDbPath();
+}
+
+export function configuredManifestPath(): string {
+  return process.env.SWISS_TRADEMARK_MANIFEST || defaultManifestPath();
 }
 
 export function configuredSourceRoot(): string {

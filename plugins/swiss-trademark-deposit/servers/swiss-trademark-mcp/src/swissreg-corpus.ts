@@ -1,6 +1,18 @@
 #!/usr/bin/env node
 import { z } from "zod";
-import { runCorpusServer, toolResult } from "./mcp-shared.js";
+import {
+  goodsServicesTextListSchema,
+  identifierSchema,
+  limit50Schema,
+  niceClassSchema,
+  niceClassesSchema,
+  offsetSchema,
+  querySchema,
+  shortTextListSchema,
+  shortTextSchema,
+  territoriesSchema,
+} from "./mcp-schemas.js";
+import { READ_ONLY_TOOL_ANNOTATIONS, runCorpusServer, toolResult } from "./mcp-shared.js";
 
 await runCorpusServer("swissreg-corpus", (server, corpus) => {
   server.registerTool(
@@ -8,12 +20,13 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Search Swissreg terms",
       description: "Search professional Swissreg goods/services examples. Mandataire is reported as unavailable unless row-level metadata exists.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        nice_class: z.number().int().min(1).max(45).optional(),
-        mandataire: z.string().optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        query: querySchema.optional(),
+        nice_class: niceClassSchema.optional(),
+        mandataire: shortTextSchema.optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) =>
@@ -33,10 +46,11 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Get class combinations",
       description: "Return Swissreg marks whose class sets exactly or partly cover the requested classes.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        nice_classes: z.array(z.number().int().min(1).max(45)).min(1),
+        nice_classes: niceClassesSchema.min(1),
         mode: z.enum(["superset", "exact"]).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
+        limit: limit50Schema.optional(),
       },
     },
     async (args) => toolResult(corpus.getSwissregClassCombinations(args)),
@@ -47,9 +61,10 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Get sector benchmark",
       description: "Return class-level Swissreg statistics: mark count, average granularity, and frequent terms.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        nice_class: z.number().int().min(1).max(45),
-        limit: z.number().int().min(1).max(50).optional(),
+        nice_class: niceClassSchema,
+        limit: limit50Schema.optional(),
       },
     },
     async (args) => toolResult(corpus.getSwissregSectorBenchmark(args)),
@@ -60,6 +75,7 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "List mandataires",
       description: "List mandataire groups available as Swissreg filter metadata.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {},
     },
     async () => toolResult(corpus.listSwissregMandataires()),
@@ -70,12 +86,13 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Search Swissreg examples",
       description: "Compatibility alias for professional Swissreg goods/services examples.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        classes: z.array(z.number().int().min(1).max(45)).optional(),
-        mandataire_groups: z.array(z.string()).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        query: querySchema.optional(),
+        classes: niceClassesSchema.optional(),
+        mandataire_groups: shortTextListSchema.optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.swissregSearchExamples(args)),
@@ -86,10 +103,11 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Swissreg class combinations",
       description: "Compatibility alias: group comparable Swissreg marks by Nice class combinations.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().optional(),
-        classes_hint: z.array(z.number().int().min(1).max(45)).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
+        query: querySchema.optional(),
+        classes_hint: niceClassesSchema.optional(),
+        limit: limit50Schema.optional(),
       },
     },
     async (args) => toolResult(corpus.swissregClassCombinations(args)),
@@ -100,8 +118,9 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Swissreg mark detail",
       description: "Return all local corpus goods/services rows for one Swissreg mark URN.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        urn: z.string().min(1),
+        urn: identifierSchema,
       },
     },
     async (args) => toolResult(corpus.swissregMarkDetail(args)),
@@ -112,11 +131,12 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Swissreg mandataire metadata",
       description: "Return available Swissreg mandataire filter metadata. This is not row-level goods/services filtering.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        mandataire_group: z.string().optional(),
-        query: z.string().optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-        offset: z.number().int().min(0).optional(),
+        mandataire_group: shortTextSchema.optional(),
+        query: querySchema.optional(),
+        limit: limit50Schema.optional(),
+        offset: offsetSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.swissregMandataireMetadata(args)),
@@ -127,12 +147,13 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Clearance search plan",
       description: "Generate a Swiss trademark clearance search plan across live-search sources.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
-        sign: z.string().min(1),
-        classes: z.array(z.number().int().min(1).max(45)).optional(),
-        goods_services: z.array(z.string()).optional(),
-        mark_type: z.string().optional(),
-        territories: z.array(z.string()).optional(),
+        sign: identifierSchema,
+        classes: niceClassesSchema.optional(),
+        goods_services: goodsServicesTextListSchema.optional(),
+        mark_type: shortTextSchema.optional(),
+        territories: territoriesSchema.optional(),
       },
     },
     async (args) => toolResult(corpus.clearanceSearchPlan(args)),
@@ -143,6 +164,7 @@ await runCorpusServer("swissreg-corpus", (server, corpus) => {
     {
       title: "Corpus stats",
       description: "Return local corpus counts, source dates, and ingestion warnings.",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {},
     },
     async () => toolResult(corpus.corpusStats()),

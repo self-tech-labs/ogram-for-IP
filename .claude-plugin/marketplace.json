@@ -1,35 +1,25 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "ogram-for-ip",
   "owner": {
     "name": "ogram.ch and enodo.ch"
   },
-  "description": "Open-source AI skills and local MCP tools for Swiss IP professionals.",
-  "version": "0.1.0",
-  "license": "MIT",
-  "coAuthors": [
-    {
-      "name": "ogram.ch",
-      "url": "https://ogram.ch",
-      "role": "Legaltech AI technical side"
-    },
-    {
-      "name": "enodo.ch",
-      "url": "https://enodo.ch",
-      "role": "Law firm"
-    }
-  ],
+  "metadata": {
+    "description": "Open-source AI skills and local MCP tools for Swiss IP professionals.",
+    "version": "0.2.0"
+  },
   "plugins": [
     {
       "name": "swiss-trademark-deposit",
       "source": "./plugins/swiss-trademark-deposit",
       "description": "Offline-first assistant for preparing Swiss trademark filings before the IPI using local Nice, WDL, Swissreg, and TAF corpora.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "ogram.ch and enodo.ch",
         "url": "https://ogram.ch"
       },
       "license": "MIT",
-      "category": "Legal",
+      "category": "Business & Operations",
       "tags": [
         "swiss-trademark",
         "intellectual-property",
