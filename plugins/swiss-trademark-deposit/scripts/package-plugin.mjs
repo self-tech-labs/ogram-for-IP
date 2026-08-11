@@ -37,7 +37,7 @@ const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(pluginRoot, "../..");
 const serverRoot = resolve(pluginRoot, "servers/swiss-trademark-mcp");
 const releasesRoot = resolve(repoRoot, "releases");
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const windowsNpmCli = resolve(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js");
 
 const expectedArguments = new Set(["--skip-checks", "--with-node-modules"]);
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -180,6 +180,17 @@ function run(command, commandArgs, options = {}) {
   }
 }
 
+function runNpm(commandArgs, options = {}) {
+  if (process.platform === "win32") {
+    if (!existsSync(windowsNpmCli)) {
+      throw new Error(`Unable to locate the npm CLI beside Node.js at ${windowsNpmCli}.`);
+    }
+    run(process.execPath, [windowsNpmCli, ...commandArgs], options);
+    return;
+  }
+  run("npm", commandArgs, options);
+}
+
 function assertSafeRelativePath(path) {
   const normalized = path.replaceAll("\\", "/");
   if (
@@ -268,12 +279,12 @@ function stageRuntime(stagingRoot) {
 function prepareSource({ skipChecks }) {
   if (!skipChecks) {
     log("Installing the exact package-lock before the maintainer build and test sequence.");
-    run(npmCommand, ["ci", "--no-audit", "--no-fund"], { cwd: serverRoot });
-    run(npmCommand, ["run", "build"], { cwd: serverRoot });
-    run(npmCommand, ["run", "typecheck:test"], { cwd: serverRoot });
-    run(npmCommand, ["test"], { cwd: serverRoot });
-    run(npmCommand, ["run", "smoke"], { cwd: serverRoot });
-    run(npmCommand, ["run", "ingest:check"], { cwd: serverRoot });
+    runNpm(["ci", "--no-audit", "--no-fund"], { cwd: serverRoot });
+    runNpm(["run", "build"], { cwd: serverRoot });
+    runNpm(["run", "typecheck:test"], { cwd: serverRoot });
+    runNpm(["test"], { cwd: serverRoot });
+    runNpm(["run", "smoke"], { cwd: serverRoot });
+    runNpm(["run", "ingest:check"], { cwd: serverRoot });
   } else {
     log("Skipping the maintainer build/test/data gate because --skip-checks was explicitly supplied.");
   }
@@ -629,7 +640,7 @@ function main() {
 
     if (options.withNodeModules) {
       log(`Creating a platform-specific standalone runtime for ${process.platform}/${process.arch}.`);
-      run(npmCommand, ["ci", "--omit=dev", "--no-audit", "--no-fund"], {
+      runNpm(["ci", "--omit=dev", "--no-audit", "--no-fund"], {
         cwd: resolve(stagingRoot, "servers/swiss-trademark-mcp"),
       });
       removeNodeBinSymlinks(stagingRoot);
