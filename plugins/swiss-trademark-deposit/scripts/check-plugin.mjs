@@ -47,6 +47,7 @@ const semverPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d
 const requiredFiles = [
   ".codex-plugin/plugin.json",
   ".claude-plugin/plugin.json",
+  ".mcp.json",
   "LICENSE",
   "THIRD_PARTY_NOTICES.md",
   "CHANGELOG.md",
@@ -185,7 +186,13 @@ function validateManifests() {
     "Codex manifest",
   );
   validateCommonManifest(codex, "Codex manifest");
-  validateMcpServers(codex.mcpServers, "Codex");
+  if (codex.mcpServers !== "./.mcp.json") {
+    fail("Codex manifest.mcpServers must point to ./.mcp.json.");
+  }
+  assertPluginRelativePath(codex.mcpServers, "Codex manifest.mcpServers");
+  const codexMcp = readJson(resolve(pluginRoot, ".mcp.json"), "Codex MCP config");
+  assertOnlyKeys(codexMcp, new Set(["mcpServers"]), "Codex MCP config");
+  validateMcpServers(codexMcp.mcpServers, "Codex");
   assertObject(codex.interface, "Codex manifest.interface");
   if (codex.interface.category !== CATEGORY) {
     fail(`Codex manifest.interface.category must be ${CATEGORY}.`);
@@ -440,7 +447,7 @@ function main() {
   for (const file of requiredFiles) {
     if (!existsSync(resolve(pluginRoot, file))) fail(`Missing required plugin file: ${file}`);
   }
-  for (const removedFile of [".mcp.json", "manifest.json"]) {
+  for (const removedFile of ["manifest.json"]) {
     if (existsSync(resolve(pluginRoot, removedFile))) fail(`Obsolete shared manifest must be removed: ${removedFile}`);
   }
   if (existsSync(resolve(serverRoot, "dist/index.js"))) {

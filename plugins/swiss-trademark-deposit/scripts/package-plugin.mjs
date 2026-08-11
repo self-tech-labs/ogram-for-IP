@@ -46,6 +46,7 @@ const semverPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d
 const runtimeFiles = [
   [resolve(pluginRoot, ".codex-plugin/plugin.json"), ".codex-plugin/plugin.json"],
   [resolve(pluginRoot, ".claude-plugin/plugin.json"), ".claude-plugin/plugin.json"],
+  [resolve(pluginRoot, ".mcp.json"), ".mcp.json"],
   [resolve(pluginRoot, "LICENSE"), "LICENSE"],
   [resolve(pluginRoot, "THIRD_PARTY_NOTICES.md"), "THIRD_PARTY_NOTICES.md"],
   [resolve(pluginRoot, "CHANGELOG.md"), "CHANGELOG.md"],

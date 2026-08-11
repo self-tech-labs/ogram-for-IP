@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "nice-headings": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "nice-headings"
+      ]
+    },
+    "wdl": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "wdl"
+      ]
+    },
+    "swissreg-corpus": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "swissreg-corpus"
+      ]
+    },
+    "taf-decisions": {
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./scripts/run-mcp-server.mjs",
+        "taf-decisions"
+      ]
+    }
+  }
+}

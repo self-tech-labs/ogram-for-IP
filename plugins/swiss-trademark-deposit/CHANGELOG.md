@@ -19,7 +19,7 @@ All notable changes to the Swiss Trademark Deposit plugin are documented here.
 
 - Separated reproducible ingestion inputs from historical developer handoff material.
 - Moved the developer document, handoff notes, and legacy skill source into a non-normative documentation archive.
-- Replaced the incompatible shared MCP configuration with host-specific inline declarations for Codex and Claude.
+- Replaced the incompatible Claude-root-variable configuration with a Codex-native `.mcp.json` and Claude-specific inline declarations.
 - Reworked Swissreg class-combination queries to stay SQL-bounded instead of loading the full corpus into memory.
 - Removed a duplicated source-file label from every Swissreg goods/services row, reducing the generated database by roughly 7 MB while preserving API provenance output; the enforced database budget is now 100 MB.
 - Hardened first-run runtime setup with cross-process locking and exact lockfile-version checks.
@@ -31,6 +31,7 @@ All notable changes to the Swiss Trademark Deposit plugin are documented here.
 ### Fixed
 
 - Codex MCP startup no longer receives an unexpanded Claude-only plugin-root variable.
+- Codex 0.136 catalog ingestion accepts the plugin manifest because `mcpServers` points to the supported plugin-local `.mcp.json`.
 - Both host manifests now pass their canonical/installed validators and use the supported `Business & Operations` category.
 - Exact TAF reference lookup rejects blanks and SQL wildcard inputs, and class/outcome filters apply to the same class row.
 - Filing intake rejects empty goods/services term lists and unsupported language codes.
@@ -42,7 +43,7 @@ All notable changes to the Swiss Trademark Deposit plugin are documented here.
 ### Removed
 
 - The redundant generated `swiss-trademark-deposit.skill` archive; the equivalent legacy `SKILL.md` source remains preserved.
-- The duplicated combined MCP server, obsolete `.mcp.json`, unused custom `manifest.json`, completed implementation plan, and empty data placeholder.
+- The duplicated combined MCP server, unused custom `manifest.json`, completed implementation plan, and empty data placeholder.
 
 ### Data integrity
 

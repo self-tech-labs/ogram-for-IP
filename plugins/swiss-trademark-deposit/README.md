@@ -23,7 +23,7 @@ Typical prompts include:
 
 ## Runtime
 
-The Codex and Claude manifests each declare the same four read-only stdio MCP servers inline:
+Codex's `.mcp.json` and the Claude manifest declare the same four read-only stdio MCP servers:
 
 | Server | Runtime role |
 | --- | --- |
@@ -32,7 +32,7 @@ The Codex and Claude manifests each declare the same four read-only stdio MCP se
 | `swissreg-corpus` | Example wording, class combinations, sector benchmarks, mark detail, and search planning |
 | `taf-decisions` | Risk screening, decision search, decision detail, and lexical similar-sign retrieval |
 
-Each server starts through `scripts/run-mcp-server.mjs` and reads the same generated SQLite database. Paths are resolved from the installed plugin root. Version 0.2.0 exposes only these four entry points—there is no combined server and no `.mcp.json`.
+Each server starts through `scripts/run-mcp-server.mjs` and reads the same generated SQLite database. Paths are resolved from the installed plugin root. Version 0.2.0 exposes only these four entry points—there is no combined server.
 
 The package declares Node.js 22–25 and npm 10 or newer. The normal archive includes built JavaScript but not `node_modules`; its first MCP startup runs a locked production dependency install. The standalone archive includes production dependencies and is platform-specific because of the native SQLite module. SQLite uses N-API, so one archive supports the declared Node range on the named operating system and CPU architecture.
 

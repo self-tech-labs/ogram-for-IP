@@ -23,7 +23,7 @@ It combines one shared workflow skill with four local, read-only MCP servers:
 | `swissreg-corpus` | Professional examples, class combinations, and clearance planning |
 | `taf-decisions` | Absolute-ground decisions, risk screening, and similar-sign retrieval |
 
-The Codex and Claude manifests declare these four servers inline. There is no shared `.mcp.json` and no combined MCP entry point.
+Codex loads these four servers from the plugin-local `.mcp.json`; the Claude manifest declares the same servers inline. There is no combined MCP entry point.
 
 ## Host support
 

@@ -24,40 +24,7 @@
     "MCP"
   ],
   "skills": "./skills/",
-  "mcpServers": {
-    "nice-headings": {
-      "cwd": ".",
-      "command": "node",
-      "args": [
-        "./scripts/run-mcp-server.mjs",
-        "nice-headings"
-      ]
-    },
-    "wdl": {
-      "cwd": ".",
-      "command": "node",
-      "args": [
-        "./scripts/run-mcp-server.mjs",
-        "wdl"
-      ]
-    },
-    "swissreg-corpus": {
-      "cwd": ".",
-      "command": "node",
-      "args": [
-        "./scripts/run-mcp-server.mjs",
-        "swissreg-corpus"
-      ]
-    },
-    "taf-decisions": {
-      "cwd": ".",
-      "command": "node",
-      "args": [
-        "./scripts/run-mcp-server.mjs",
-        "taf-decisions"
-      ]
-    }
-  },
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Swiss Trademark Deposit",
     "shortDescription": "Prepare Swiss trademark filings with local IPI, Nice, Swissreg, and TAF sources.",

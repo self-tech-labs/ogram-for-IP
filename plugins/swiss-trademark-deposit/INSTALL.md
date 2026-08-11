@@ -16,7 +16,7 @@ The runtime uses `better-sqlite3`, a native dependency. Standalone archives must
 
 The plugin payload contains:
 
-- `.codex-plugin/plugin.json`, including Codex's four inline MCP declarations;
+- `.codex-plugin/plugin.json` and `.mcp.json`, declaring Codex's four MCP servers;
 - `.claude-plugin/plugin.json`, including Claude's four inline MCP declarations;
 - the shared workflow under `skills/swiss-trademark-deposit/`;
 - Claude-only wrappers under `commands/`;
@@ -25,7 +25,7 @@ The plugin payload contains:
 - `trademark.sqlite` and `source-manifest.json`; and
 - `LICENSE`, `THIRD_PARTY_NOTICES.md`, and `CHANGELOG.md`.
 
-There is no `.mcp.json` and no combined MCP entry point. The raw five-file source snapshot is a maintainer input under the repository's `data-sources/2026-05-05/`; it is not needed to query the included database.
+There is no combined MCP entry point. The raw five-file source snapshot is a maintainer input under the repository's `data-sources/2026-05-05/`; it is not needed to query the included database.
 
 ## Codex repository marketplace
 
@@ -194,7 +194,7 @@ locks older than 15 minutes are normally removed automatically.
 
 ### Plugin is visible but MCP tools are missing
 
-Start a new host task/session, run the four `--check` commands above, and confirm the installed 0.2.0 manifests still contain exactly the four inline server declarations. Do not add a legacy `.mcp.json`.
+Start a new host task/session, run the four `--check` commands above, and confirm the installed 0.2.0 plugin still contains exactly the four server declarations: Codex in `.mcp.json`, Claude inline in its manifest.
 
 ### Claude Desktop Chat cannot install the archive
 
