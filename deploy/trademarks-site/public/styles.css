@@ -33,7 +33,8 @@ h2{font-size:clamp(38px,3.6vw,54px);margin:0 0 25px}
 .setup-action--primary:hover{background:#353532}
 .setup-action--secondary{background:var(--paper);border:1px solid var(--ink);color:var(--ink)}
 .setup-action--secondary:hover{background:var(--surface)}
-.setup-feedback{min-height:21px;margin:0 0 30px;font-size:13px;color:var(--muted)}
+.setup-feedback{min-height:21px;margin:0 0 2px;font-size:13px;color:var(--muted)}
+.setup-legal{margin:0 0 30px;font-size:13px;color:var(--muted)}
 .product-intro{padding-bottom:70px}
 .plugin-mark{width:min(100%,465px);height:310px;border:1px solid var(--hairline);border-radius:18px;box-shadow:0 20px 54px rgba(0,0,0,.06);background:#fdfdfc;padding:20px 23px;display:flex;flex-direction:column;justify-content:space-between}
 .plugin-mark__top{font-size:15px;letter-spacing:-.045em}.plugin-mark__top span{padding:0 4px;color:var(--muted)}
