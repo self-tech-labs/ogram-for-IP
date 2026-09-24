@@ -25,6 +25,15 @@ h1,h2,h3{font-family:Newsreader,Georgia,serif;font-weight:400;letter-spacing:-.0
 h1{font-size:clamp(58px,5.2vw,76px);margin:0 0 32px;max-width:700px}
 h2{font-size:clamp(38px,3.6vw,54px);margin:0 0 25px}
 .product-deck{font:400 clamp(25px,2.25vw,31px)/1.35 Newsreader,Georgia,serif;letter-spacing:-.012em;max-width:600px;margin:0 0 58px}
+.setup-actions{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 9px}
+.setup-action{min-height:64px;padding:16px 22px;border-radius:14px;display:inline-flex;align-items:center;justify-content:space-between;gap:25px;font:400 16px/1.2 'Instrument Sans',system-ui,sans-serif;cursor:pointer;text-decoration:none;transition:background .15s ease,border-color .15s ease}
+.setup-action:hover{text-decoration:none}
+.setup-action span{font-size:25px;line-height:1}
+.setup-action--primary{background:var(--ink);border:1px solid var(--ink);color:var(--paper)}
+.setup-action--primary:hover{background:#353532}
+.setup-action--secondary{background:var(--paper);border:1px solid var(--ink);color:var(--ink)}
+.setup-action--secondary:hover{background:var(--surface)}
+.setup-feedback{min-height:21px;margin:0 0 30px;font-size:13px;color:var(--muted)}
 .product-intro{padding-bottom:70px}
 .plugin-mark{width:min(100%,465px);height:310px;border:1px solid var(--hairline);border-radius:18px;box-shadow:0 20px 54px rgba(0,0,0,.06);background:#fdfdfc;padding:20px 23px;display:flex;flex-direction:column;justify-content:space-between}
 .plugin-mark__top{font-size:15px;letter-spacing:-.045em}.plugin-mark__top span{padding:0 4px;color:var(--muted)}
@@ -40,5 +49,5 @@ h2{font-size:clamp(38px,3.6vw,54px);margin:0 0 25px}
 .site-footer__inner{max-width:1430px;margin:auto;padding:36px 56px;display:flex;justify-content:space-between;align-items:flex-start;gap:26px;flex-wrap:wrap}.site-footer__inner nav{display:flex;gap:17px;flex-wrap:wrap}.site-footer__inner a{text-decoration:none}.site-footer__inner a:hover{text-decoration:underline}
 .content{padding:70px 0 110px}.content__grid{display:grid;grid-template-columns:minmax(0,710px) minmax(180px,1fr);gap:90px}.content h1{font-size:clamp(50px,5vw,68px);margin:14px 0 24px}.content h2{font-size:34px;margin:42px 0 14px}.content h2:first-child{margin-top:0}.content p,.content li{color:#3f3f3b}.content li{margin:10px 0}.content aside{border-top:1px solid var(--hairline);padding-top:16px;font-size:13px;color:var(--muted)}.content aside a{display:block;margin-top:10px}.content ul{padding-left:22px}.content .effective{font-size:13px;color:var(--muted)}.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}.lead{font:400 25px/1.4 Newsreader,Georgia,serif!important;color:var(--ink)!important}.note{border-left:2px solid var(--ink);padding:3px 0 3px 21px;margin:28px 0}
 @media(max-width:850px){.wrap{width:min(100% - 48px,700px)}.site-header__inner{padding:0 24px;min-height:74px}.site-nav{gap:18px;font-size:13px}.product-layout{display:block;padding-top:50px;padding-bottom:75px}.product-rail{position:static;margin-bottom:60px}.product-rail nav{display:flex;flex-wrap:wrap;gap:17px}.product-rail__label{margin-bottom:20px}.content__grid{display:block}.content aside{margin-top:65px}}
-@media(max-width:500px){.site-nav a:nth-child(2),.site-nav a:nth-child(3){display:none}.site-nav{gap:15px}.product-deck{margin-bottom:42px}.plugin-mark{height:240px}.plugin-mark__circle{width:83px;height:83px;font-size:51px;padding-top:12px}.product-intro{padding-bottom:35px}.product-section{padding:45px 0 55px}.site-footer__inner{padding:30px 24px;display:block}.site-footer__inner nav{margin:18px 0}.content{padding:50px 0 70px}}
+@media(max-width:500px){.site-nav a:nth-child(2),.site-nav a:nth-child(3){display:none}.site-nav{gap:15px}.product-deck{margin-bottom:42px}.setup-actions{display:grid}.setup-action{width:100%}.plugin-mark{height:240px}.plugin-mark__circle{width:83px;height:83px;font-size:51px;padding-top:12px}.product-intro{padding-bottom:35px}.product-section{padding:45px 0 55px}.site-footer__inner{padding:30px 24px;display:block}.site-footer__inner nav{margin:18px 0}.content{padding:50px 0 70px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
