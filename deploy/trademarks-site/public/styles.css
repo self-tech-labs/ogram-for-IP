@@ -1,0 +1,44 @@
+@font-face{font-family:Instrument Sans;src:url('/fonts/InstrumentSans-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:Newsreader;src:url('/fonts/Newsreader-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+:root{--paper:#fff;--ink:#171715;--muted:#6f6f69;--hairline:#e8e8e4;--surface:#f0f0ed;--signal:#b9ed17}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 'Instrument Sans',system-ui,sans-serif}
+a{color:inherit;text-underline-offset:5px;text-decoration-thickness:1px}
+a:hover{text-decoration:underline}
+a:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.skip-link{position:absolute;left:-9999px;top:8px;background:var(--paper);padding:8px 12px;z-index:100}.skip-link:focus{left:8px}
+.wrap{width:min(1350px,calc(100% - 112px));margin:auto}
+.site-header{background:var(--paper)}
+.site-header__inner{max-width:1430px;margin:auto;padding:0 56px;min-height:92px;display:flex;align-items:center;justify-content:space-between;gap:30px}
+.wordmark{font-size:20px;letter-spacing:-.055em;text-decoration:none}.wordmark:hover{text-decoration:none}
+.wordmark span{display:none}
+.site-nav{display:flex;gap:45px;font-size:14px;align-items:center}.site-nav a{text-decoration:none}.site-nav a:hover{text-decoration:underline}
+.product-layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:68px;padding-top:91px;padding-bottom:130px}
+.product-rail{align-self:start;position:sticky;top:35px;font-size:14px}
+.product-rail__label,.chapter-label{font-size:11px;font-weight:700;letter-spacing:.075em;text-transform:uppercase}
+.product-rail__label{display:flex;align-items:center;gap:12px;margin:9px 0 29px;white-space:nowrap}
+.product-dot{width:6px;height:6px;border-radius:50%;background:var(--signal);display:inline-block;flex:0 0 auto}
+.product-rail nav{display:grid;gap:17px}.product-rail nav a{color:var(--muted);max-width:170px;text-decoration:none;line-height:1.35}.product-rail nav a:hover{color:var(--ink);text-decoration:underline}
+.product-body{max-width:740px}
+h1,h2,h3{font-family:Newsreader,Georgia,serif;font-weight:400;letter-spacing:-.045em;line-height:1.02}
+h1{font-size:clamp(58px,5.2vw,76px);margin:0 0 32px;max-width:700px}
+h2{font-size:clamp(38px,3.6vw,54px);margin:0 0 25px}
+.product-deck{font:400 clamp(25px,2.25vw,31px)/1.35 Newsreader,Georgia,serif;letter-spacing:-.012em;max-width:600px;margin:0 0 58px}
+.product-intro{padding-bottom:70px}
+.plugin-mark{width:min(100%,465px);height:310px;border:1px solid var(--hairline);border-radius:18px;box-shadow:0 20px 54px rgba(0,0,0,.06);background:#fdfdfc;padding:20px 23px;display:flex;flex-direction:column;justify-content:space-between}
+.plugin-mark__top{font-size:15px;letter-spacing:-.045em}.plugin-mark__top span{padding:0 4px;color:var(--muted)}
+.plugin-mark__center{flex:1;display:grid;place-items:center}.plugin-mark__circle{width:112px;height:112px;border-radius:50%;background:var(--signal);display:grid;place-items:center;font:400 67px/1 Newsreader,Georgia,serif;padding-top:16px;transform:rotate(-13deg)}
+.plugin-mark__bottom{border-top:1px solid var(--hairline);padding-top:14px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;font-weight:700}.plugin-mark__bottom span{color:var(--muted)}
+.product-section{padding:56px 0 68px;border-top:1px solid var(--hairline);scroll-margin-top:50px}
+.chapter-label{color:var(--muted);margin-bottom:25px}
+.product-section p{font:400 clamp(21px,2vw,26px)/1.46 Newsreader,Georgia,serif;letter-spacing:-.015em;max-width:590px;margin:0 0 17px}
+.product-section .fine-print{font:400 14px/1.55 'Instrument Sans',system-ui,sans-serif;color:var(--muted);margin-top:25px}
+.product-section .endpoint-link{font-size:clamp(23px,2.4vw,32px);overflow-wrap:anywhere}
+.detail-links{display:flex;gap:25px;flex-wrap:wrap;font-size:13px;margin-top:39px}.detail-links a{color:var(--muted)}
+.site-footer{border-top:1px solid var(--hairline);font-size:13px;color:var(--muted)}
+.site-footer__inner{max-width:1430px;margin:auto;padding:36px 56px;display:flex;justify-content:space-between;align-items:flex-start;gap:26px;flex-wrap:wrap}.site-footer__inner nav{display:flex;gap:17px;flex-wrap:wrap}.site-footer__inner a{text-decoration:none}.site-footer__inner a:hover{text-decoration:underline}
+.content{padding:70px 0 110px}.content__grid{display:grid;grid-template-columns:minmax(0,710px) minmax(180px,1fr);gap:90px}.content h1{font-size:clamp(50px,5vw,68px);margin:14px 0 24px}.content h2{font-size:34px;margin:42px 0 14px}.content h2:first-child{margin-top:0}.content p,.content li{color:#3f3f3b}.content li{margin:10px 0}.content aside{border-top:1px solid var(--hairline);padding-top:16px;font-size:13px;color:var(--muted)}.content aside a{display:block;margin-top:10px}.content ul{padding-left:22px}.content .effective{font-size:13px;color:var(--muted)}.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}.lead{font:400 25px/1.4 Newsreader,Georgia,serif!important;color:var(--ink)!important}.note{border-left:2px solid var(--ink);padding:3px 0 3px 21px;margin:28px 0}
+@media(max-width:850px){.wrap{width:min(100% - 48px,700px)}.site-header__inner{padding:0 24px;min-height:74px}.site-nav{gap:18px;font-size:13px}.product-layout{display:block;padding-top:50px;padding-bottom:75px}.product-rail{position:static;margin-bottom:60px}.product-rail nav{display:flex;flex-wrap:wrap;gap:17px}.product-rail__label{margin-bottom:20px}.content__grid{display:block}.content aside{margin-top:65px}}
+@media(max-width:500px){.site-nav a:nth-child(2),.site-nav a:nth-child(3){display:none}.site-nav{gap:15px}.product-deck{margin-bottom:42px}.plugin-mark{height:240px}.plugin-mark__circle{width:83px;height:83px;font-size:51px;padding-top:12px}.product-intro{padding-bottom:35px}.product-section{padding:45px 0 55px}.site-footer__inner{padding:30px 24px;display:block}.site-footer__inner nav{margin:18px 0}.content{padding:50px 0 70px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

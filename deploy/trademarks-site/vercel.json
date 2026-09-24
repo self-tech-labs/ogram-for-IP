@@ -1,0 +1,32 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "public",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/mcp",
+      "destination": "https://swiss-trademark-mcp.ervaucher.workers.dev/mcp"
+    },
+    {
+      "source": "/health",
+      "destination": "https://swiss-trademark-mcp.ervaucher.workers.dev/health"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/mcp",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}
