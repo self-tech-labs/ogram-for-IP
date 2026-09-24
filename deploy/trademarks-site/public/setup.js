@@ -1,4 +1,4 @@
-const pluginUrl = 'https://chatgpt.com/plugins/plugin_asdk_app_6aa94b3c5bd081a4bbf7c8bf10af937a?open_in_app';
+const pluginUrl = document.querySelector('.setup-action--primary').href;
 const setupPrompt = `Help me install Swiss Trademark Deposit from ${pluginUrl}. Once it is connected, ask for my proposed mark and business activities. Then use its read-only tools to prepare Nice classes, goods and services wording, and a plan for a live clearance search. Do not claim that an application was filed or a live search was completed.`;
 
 const copyButton = document.getElementById('copy-setup-prompt');
