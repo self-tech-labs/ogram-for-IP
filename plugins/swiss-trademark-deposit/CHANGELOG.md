@@ -2,6 +2,13 @@
 
 All notable changes to the Swiss Trademark Deposit plugin are documented here.
 
+## Unreleased
+
+### Security
+
+- Updated vulnerable locked runtime dependencies (`fast-uri`, `hono`, `ip-address`, and `qs`) and development dependencies (`@xmldom/xmldom`, both `brace-expansion` branches, `nanoid`, and Vitest) to patched versions.
+- Raised the minimum Vitest version to 4.1.11, which includes the redirect-mock path traversal fix.
+
 ## 0.2.0 - 2026-08-04
 
 ### Added
